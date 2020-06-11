@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import Container from '../../components/Container';
 import api from '../../services/api';
 import Swal from 'sweetalert2'; 
@@ -18,7 +18,7 @@ const SocialCallback = () => {
 	let search = '';
 	let field = '';
 
-	if (plaform == 'deezer') {
+	if (plaform === 'deezer') {
 		search = window.location.search;
 		field = 'code';
 	} else {

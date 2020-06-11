@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import Cache from '../classes/Cache';
 import axios from 'axios';
 
 const app_id = process.env.DEEZER_APPID;
@@ -7,20 +8,14 @@ const secret_key = process.env.DEEZER_SECRETKEY;
 const redirect_uri = encodeURIComponent(process.env.REDIRECT_URL+'/deezer/callback');
 const authUrl = 'https://connect.deezer.com/oauth/auth.php?app_id='+app_id+'&redirect_uri='+redirect_uri+'&perms=basic_access,email';		
 
-const deezerDefault = null;
-
 function getDeezerData(request: Request) {
-	const data = request.session?.deezerData || deezerDefault;
-	return data as {
-		auth: string,
-		userId: string,
-		playlistId: number
-	}
+	const data = request.session?.deezerData || Cache.get('deezerData');
+	return data as {auth: string, userId: string, playlistId: number}
 }
 
 class DeezerController {
 	getAuth(request: Request, response: Response) {
-		var deezerData = getDeezerData(request);		
+		var deezerData = getDeezerData(request);
 		return response.json({logged: deezerData ? true : false, authUrl});
 	}
 
@@ -49,8 +44,10 @@ class DeezerController {
 					deezerData.playlistId = dzUserPlaylists?.data?.data?.find((playlist:any) => playlist.is_loved_track)?.id;
 					if (!deezerData.playlistId) return failure('no_playist_id');
 
+					Cache.set('deezerData',deezerData);
 					request.session.deezerData = deezerData;
 					request.session.save(() => { success(); });
+
 					return;
 				} else {			
 					return failure('no_session');
@@ -70,24 +67,39 @@ class DeezerController {
 		var offset = (page-1)*limit;
 			
 		var result = await axios.get('https://api.deezer.com/playlist/'+deezerData.playlistId+'/tracks?limit='+limit+'&offset='+offset+'&output=json&'+deezerData.auth);
+		var resultlist = result?.data?.data;
+
+		if (!resultlist) {
+			Cache.remove('deezerData',request);
+			return response.json({status:false});
+		}
 		
-		var tracks = result.data.data.map((track:any) => {
-			let data = {
-				id: track.id,
-				title: track.title,
-				artist: track.artist.name,
-				album: track.album.title,
-				ctitle: '', cartist: '', calbum:''
-			};
-			data.ctitle = data.title?.toLowerCase();
-			data.cartist = data.artist?.toLowerCase();
-			data.calbum = data.album?.toLowerCase();
-			return data;
-		});
+		var tracks = resultlist.map(getDeezerTrackData);
 
-
-		return response.json(tracks);
+		return response.json({status:true, tracks});
 	}
+
+	async findTrack(request: Request, response: Response) {
+		var deezerData = getDeezerData(request);
+		if (!deezerData) return response.json({status:false});
+		return response.json({status:true, params:request.params});
+	}
+}
+
+function getDeezerTrackData(track: any) {
+	let data = {
+		id: track.id,
+		title: track.title,
+		artist: track.artist.name,
+		album: track.album.title,
+		ctitle: '', cartist: '', calbum:''
+	};
+
+	data.ctitle = data.title.toLowerCase();
+	data.cartist = data.artist.toLowerCase();
+	data.calbum = data.album.toLowerCase();
+
+	return data;
 }
 
 export default DeezerController;
