@@ -22,6 +22,7 @@ interface MatchButtonProps {
 }
 
 const MatchButton = (props: MatchButtonProps) => {
+	/*
 	return (props.match[props.code]) ? (
 		<button className="ui icon green button" disabled={props.busy}>
 			<i className="check icon"></i>
@@ -31,6 +32,16 @@ const MatchButton = (props: MatchButtonProps) => {
 			<i className="add icon"></i>
 		</button> 
 	);
+	*/
+	if (props.match[props.code]) {
+		return <i className='check green icon'></i>;
+	}
+	
+	return (
+		<button className='mini ui icon button' disabled={props.busy} onClick={() => props.clickHandler(props.platform,props.match)} >
+			<i className='plus icon'></i>
+		</button>
+	)
 }
 
 const MatchRow = (props: MatchRowProps) => {
@@ -54,15 +65,18 @@ const MatchRow = (props: MatchRowProps) => {
 
 	const btnDz = <MatchButton match={match} busy={busy} code='dztrack' platform='deezer' clickHandler={handleClickAdd} />;
 	const btnSp = <MatchButton match={match} busy={busy} code='sptrack' platform='spotify' clickHandler={handleClickAdd} />;
+
+	// let btnDz = <i className='check icon'></i>;
+	// let btnSp = <div></div>;
 	
 	return (
-		<tr>
-			<td>{match.title}</td>
-			<td>{match.artist}</td>
-			<td>{match.album}</td>
-			<td className="text-center">{btnDz}</td>
-			<td className="text-center">{btnSp}</td> 
-		</tr>	
+		<div className="table-row">
+			<div className="cell-track">{match.title}</div>
+			<div className="cell-artist">{match.artist}</div>
+			<div className="cell-album">{match.album}</div>
+			<div className="cell-platform text-center">{btnDz}</div>
+			<div className="cell-platform text-center">{btnSp}</div> 
+		</div>	
 	)
 }
 

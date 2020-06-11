@@ -1,3 +1,159 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+
+$bordercolor: #F5F4F7;
+$borderradius: 15px;
+$mainheight: calc(100vh - 60px);
+
+html, body, #root {
+	height: 100%;
+}
+
 body {
-	overflow-y: scroll;
+	overflow-y: hidden;
+	font-family: 'Roboto';
+	background: #E6ECF3;
+}
+
+// <a href="https://iconscout.com/icons/spotify" target="_blank">Spotify Icon</a> by <a href="https://iconscout.com/contributors/naufal-thufail">Bakul Studio</a> on <a href="https://iconscout.com">Iconscout</a>
+// <a href="https://iconscout.com/icons/deezer" target="_blank">Deezer Icon</a> by <a href="https://iconscout.com/contributors/luc-chaffard" target="_blank">Luc Chaffard</a>
+
+#grid {
+	margin: 30px 20px;
+	height: $mainheight;
+	overflow: hidden;
+	display: grid;
+	grid-template-columns: 200px auto;
+
+	#sidebar {
+		height: $mainheight;
+		border-radius: $borderradius 0px 0px $borderradius;
+		background: #F3F3F3;
+		padding: 10px;
+	}
+
+	#content {
+		height: $mainheight;
+		border-radius: 0px $borderradius $borderradius 0px;
+		background-color: #F8F8F8;
+
+		display: grid;
+		row-gap: 5px;
+		grid-template-rows: 62px auto;
+
+		.top {
+			border-bottom: 2px solid $bordercolor;
+			display: flex;
+			align-items: center;
+			position: relative;
+
+			#platforms {
+				.platform {
+					color: #001950;
+					font-weight: bold;
+					font-size: 16px;
+					font-family: 'Roboto';
+					padding: 0px 30px;
+					align-items: center;
+					align-self: center;
+    				display: inline-flex;
+					cursor: pointer;
+
+					opacity: 0.3;
+					filter: grayscale(1);
+					
+					&:hover, &.logged {
+						opacity: 1;
+						filter: none;
+					}
+
+					img {
+						width: 25px;
+						height: 25px;
+						margin-right: 5px;
+					}
+				}
+			}
+
+			.gitlink {
+				color: inherit;
+			}
+			
+			#author {
+				position: absolute;
+				top: 0px;
+				right: 0px;
+				padding: 10px 2px;
+				display: grid;
+				align-items: center;
+				column-gap: 10px;
+				text-align: right;
+				grid-template-columns: 100px 50px;
+
+				.name {
+					font-size: 12px;
+					line-height: 13px;
+					span {
+						font-weight: bold;
+					}
+				}
+
+				.avatarCircle {
+					display: inline-block;
+					width: 40px;
+					height: 40px;
+					border-radius: 5px;
+					background-color: gray;
+					background-size: contain;
+				}
+			}
+		}
+
+		.body {		
+			padding: 0px 10px 10px 10px;			
+			height: calc(100vh - 119px);
+
+			.table-head {
+				height: 37px;
+
+				.table-row {
+					margin-right: 18px;
+					div {
+						padding: 10px;
+						font-weight: bold;
+					}
+					border-bottom: 1px solid darken($color: $bordercolor, $amount: 5%);
+				}
+
+			}
+
+			.table-body  {
+				height: calc(100vh - 170px);
+				border-radius: 5px;
+  				overflow-y: scroll;	
+
+				.table-row {
+					height: 40px;
+					div {
+						padding: 10px 10px;
+					}
+				}
+			}
+			
+			.table-row {
+				div {
+					vertical-align: middle;
+					align-self: center;
+					overflow: hidden;
+    				white-space: nowrap;
+				}
+				display: grid;
+				margin-right: 8px;
+				grid-template-columns: auto 22% 22% 80px 80px;
+			}
+
+			.warning {
+				margin-top: 6px;
+			}
+		}
+	}
 }

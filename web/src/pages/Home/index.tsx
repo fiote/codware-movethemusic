@@ -4,6 +4,9 @@ import SocialButton from '../../components/SocialButton';
 import MatchRow from '../../components/MatchRow';
 import api from '../../services/api';
 
+import ImgDeezer from '../../images/deezer.png';
+import imgSpotify from '../../images/spotify.png';
+
 import './styles.scss';
 
 interface AuthResponse {
@@ -41,8 +44,8 @@ interface TrackMatch {
 }
 
 const Home = () => {
-	const [dzData,setDzData] = useState<AuthResponse>();
-	const [spData,setSpData] = useState<AuthResponse>();
+	const [dzData,setDzData] = useState<AuthResponse>({} as AuthResponse);
+	const [spData,setSpData] = useState<AuthResponse>({} as AuthResponse);
 	const [dzTracks,setDzTracks] = useState<TrackList>();
 	const [spTracks,setSpTracks] = useState<TrackList>();
 
@@ -134,11 +137,11 @@ const Home = () => {
 
 	useEffect(() => {
 		var alltracks = [] as TrackMatch[];
-		if (!spTracks) return;
-		if (!dzTracks) return;
+		// if (!spTracks) return;
+		// if (!dzTracks) return;
 
-		var sp = JSON.parse(JSON.stringify(spTracks));
-		var dz = JSON.parse(JSON.stringify(dzTracks));
+		var sp = JSON.parse(JSON.stringify(spTracks || []));
+		var dz = JSON.parse(JSON.stringify(dzTracks || []));
 
 		compareTracks(alltracks, sp, dz, 'sptrack', 'dztrack');
 		compareTracks(alltracks, dz, sp, 'dztrack', 'sptrack');
@@ -157,39 +160,71 @@ const Home = () => {
 
 	},[dzTracks,spTracks]);
 
+	const anyLogged = dzData?.logged || spData?.logged;
 
-	let btnDeezer = <SocialButton data={dzData} platform='Deezer' />;	
-	let btnSpotify = <SocialButton data={spData} platform='Spotify' />;	
-	
-	return (
-		<Container title="deezer2spotify">
-
-			<div className="ui grid">
-				<div className="four column row">
-					<div className="left floated column">
-						{btnDeezer}
-					</div>
-					<div className="right floated column text-right">{btnSpotify}</div>
-				</div>
-			</div>			
-
-			<div className="pt-4">
-				<table className='ui very basic table'>
-					<thead>
-						<tr>
-							<th>Track</th>
-							<th className='thText'>Artist</th>
-							<th className='thText'>Album</th>
-							<th className="thBtn text-center">Deezer</th>
-							<th className="thBtn text-center">Spotify</th>
-						</tr>
-					</thead>
-					<tbody>
-						{tracks && tracks.map(match => <MatchRow key={match.id} match={match}/>)}
-					</tbody>
-				</table>				
+	const bodyTracks = (
+		<>
+			<div className='table-head'>
+				<div className="table-row">
+					<div className="cell-track">Track</div>
+					<div className="cell-artist">Artist</div>
+					<div className="cell-album">Album</div>
+					<div className="text-center cell-platform">Deezer</div>
+					<div className="text-center cell-platform">Spotify</div> 
+				</div>	
 			</div>
-		</Container>
+			<div className='table-body'>
+				{tracks && tracks.map(match => <MatchRow key={match.id} match={match}/>)}
+			</div>
+		</>
+	);
+
+	const bodyWarning = (
+		<div className='ui compact icon warning message'>
+			<i className="exclamation icon"></i>
+			<div className="content">
+				<div className="header">
+					Ops!
+				</div>
+				<p>You need at least one connection stablished to display this page. Click the icons above to connect!</p>
+			</div>
+		</div>
+	);
+
+	const bodyContent = (anyLogged) ? bodyTracks : bodyWarning;
+
+	return (
+		<div id='grid'>
+			
+			<div id='sidebar'>
+				<div className="top">
+					<h1>Move<br/>TheMusic</h1>
+				</div>
+				<div className="body">
+
+				</div>
+			</div>
+			<div id='content'>
+				<div className="top">
+					<div id="platforms">
+						<SocialButton data={dzData} platform='Deezer' />
+						<SocialButton data={spData} platform='Spotify' />
+					</div>
+					<a className="gitlink" target='_blank' href='https://github.com/fiote'>
+						<div id="author">
+							<div className="name">
+								Made by<br/>
+								<span>Murilo Mielke</span>
+							</div>
+							<div className="avatarCircle" style={{backgroundImage:'url(https://avatars3.githubusercontent.com/u/1704338?s=400&u=13f3f82a3ac0b65f31eb1e2a98c116d4d4f2e162&v=40)'}}></div>				
+						</div>		
+					</a>
+				</div>
+				<div className="body">	
+					{bodyContent}
+				</div>
+			</div>
+		</div>
 	)
 };
 

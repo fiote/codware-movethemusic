@@ -6,10 +6,10 @@ interface ContainerProps {
 }
 
 const Container = (props: ContainerProps) => {
-	const title = props.title ? <h1>{props.title}</h1> : null;
+	const title = props.title ? <h1 id='pageTitle'>{props.title}</h1> : null;
 
 	return (
-      	<div className='ui container pt-3'>
+      	<div id='container' className='ui container pt-3'>
 			{title}
 			{props.children}
 		</div>
