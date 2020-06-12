@@ -1,8 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Varela+Round&display=swap');
 
-$bordercolor: #F5F4F7;
-$borderradius: 15px;
-$mainheight: calc(100vh - 60px);
+@import './vars.scss';
 
 html, body, #root {
 	height: 100%;
@@ -10,30 +9,52 @@ html, body, #root {
 
 body {
 	overflow-y: hidden;
-	font-family: 'Roboto';
+	font-family: 'Varela Round';
 	background: #E6ECF3;
 }
-
-// <a href="https://iconscout.com/icons/spotify" target="_blank">Spotify Icon</a> by <a href="https://iconscout.com/contributors/naufal-thufail">Bakul Studio</a> on <a href="https://iconscout.com">Iconscout</a>
-// <a href="https://iconscout.com/icons/deezer" target="_blank">Deezer Icon</a> by <a href="https://iconscout.com/contributors/luc-chaffard" target="_blank">Luc Chaffard</a>
 
 #grid {
 	margin: 30px 20px;
 	height: $mainheight;
 	overflow: hidden;
 	display: grid;
+	border-radius: $borderradius;
 	grid-template-columns: 200px auto;
+
+	&.menuless {
+		display: block;
+
+		#sidebar {
+			display: none;
+		}
+	}
 
 	#sidebar {
 		height: $mainheight;
-		border-radius: $borderradius 0px 0px $borderradius;
 		background: #F3F3F3;
+		color: $textcolor;
 		padding: 10px;
+		font-weight: bold;
+
+		.menu {
+			padding-top: 20px;
+
+			.link {
+				padding: 10px;
+				display: block;
+				color: inherit;
+				* {
+					cursor: pointer;
+				}
+				&:hover {
+					color: lighten($color: $textcolor, $amount: 20%);
+				}
+			}
+		}
 	}
 
 	#content {
 		height: $mainheight;
-		border-radius: 0px $borderradius $borderradius 0px;
 		background-color: #F8F8F8;
 
 		display: grid;
@@ -111,49 +132,10 @@ body {
 		.body {		
 			padding: 0px 10px 10px 10px;			
 			height: calc(100vh - 119px);
-
-			.table-head {
-				height: 37px;
-
-				.table-row {
-					margin-right: 18px;
-					div {
-						padding: 10px;
-						font-weight: bold;
-					}
-					border-bottom: 1px solid darken($color: $bordercolor, $amount: 5%);
-				}
-
-			}
-
-			.table-body  {
-				height: calc(100vh - 170px);
-				border-radius: 5px;
-  				overflow-y: scroll;	
-
-				.table-row {
-					height: 40px;
-					div {
-						padding: 10px 10px;
-					}
-				}
-			}
-			
-			.table-row {
-				div {
-					vertical-align: middle;
-					align-self: center;
-					overflow: hidden;
-    				white-space: nowrap;
-				}
-				display: grid;
-				margin-right: 8px;
-				grid-template-columns: auto 22% 22% 80px 80px;
-			}
-
-			.warning {
-				margin-top: 6px;
-			}
 		}
 	}
 }
+
+*::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.03) !important; border-radius: 5px !important; }
+
+

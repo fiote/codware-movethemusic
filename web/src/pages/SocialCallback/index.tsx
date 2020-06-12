@@ -1,8 +1,10 @@
 import React, { useEffect } from 'react';
-import Container from '../../components/Container';
+import { useHistory, useParams } from 'react-router-dom';
+import MainView from '../../components/MainView';
+import ContentPanel from '../../components/ContentPanel';
+
 import api from '../../services/api';
 import Swal from 'sweetalert2'; 
-import { useHistory, useParams } from 'react-router-dom';
 
 interface Authcode {
 	status: boolean,
@@ -11,10 +13,8 @@ interface Authcode {
 
 const SocialCallback = () => {
   	let { plaform } = useParams();
-	console.log('plaform',plaform);
 	const history = useHistory();
 
-	
 	let search = '';
 	let field = '';
 
@@ -30,28 +30,18 @@ const SocialCallback = () => {
 	const value = String(params.get(field));
 
 	useEffect(() => {
-		api.get<Authcode>('/'+plaform+'/authcode?'+field+'='+value).then(feed => {
-			console.log(feed);
+		api.get<Authcode>('/'+plaform+'/authcode?'+field+'='+value).then(async feed => {
 			if (feed.data.status) {
-				Swal.fire({title:'Nice!', html:'We\'re now connected to your '+plaform.toUpperCase()+' account.' ,icon:'success'});
-				history.push('/');
+				await Swal.fire({title:'Nice!', html:'We\'re now connected to your '+plaform.toUpperCase()+' account.' ,icon:'success'});
+				history.push('/tracks');
 			} else {
-				Swal.fire({title:'Ops!', html:feed.data.error, icon:'error'});
-				history.push('/');
+				await Swal.fire({title:'Ops!', html:feed.data.error, icon:'error'});
+				history.push('/tracks');
 			}
 		});
 	},[]);
 
-	return (
-		<Container title="deezer2spotify">
-			<div className="ui segment" style={{"height":200}}>
-				<div className="ui active inverted dimmer">
-					<div className="ui small text loader">Checking authentication code...</div>
-				</div>
-				<p></p>
-			</div>
-		</Container>
-	)
+	return <MainView loading='Authenticating...' />
 }
 
 export default SocialCallback;

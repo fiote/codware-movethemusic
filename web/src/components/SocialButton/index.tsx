@@ -30,7 +30,7 @@ const SocialButton = (props: SocialButtonProps) => {
 	
 	return (
 		<div className={btnClass} onClick={handleClickPlatform}>
-			<img src={btnIcon} /> 
+			<img src={btnIcon} alt={props.platform} /> 
 			<span>{props.platform}</span>
 		</div>
 	)

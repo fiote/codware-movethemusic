@@ -1,3 +1,4 @@
+import { Request } from 'express';
 import fs from 'fs';
 import path from 'path';
 
@@ -22,11 +23,35 @@ class Cache {
 	}
 
 	static remove(filename: string, request: any) {
-		const path = Cache.path(filename);
-		const exists = fs.existsSync(path);
-		if (exists) fs.unlinkSync(path);
-		request.session[filename] = null;
-		request.session.save();
+		return new Promise(resolve => {
+			const path = Cache.path(filename);
+			const exists = fs.existsSync(path);
+			if (exists) fs.unlinkSync(path);
+			request.session[filename] = null;
+			request.session.save(resolve);
+		});
+	}
+
+	static sessionGet(request: Request, field: string) {
+		return request.session?.[field] || Cache.get(field);
+	}
+
+	static sessionPush(request: Request, field: string, item: any) {
+		const value = Cache.sessionGet(request, field) as any[];
+		value.push(item);
+		return Cache.sessionSet(request, field, value);
+	}
+
+	static sessionSet(request: Request, field: string, value: any) {
+		return new Promise(resolve => {
+			if (request.session) {
+				request.session[field] = value;
+				Cache.set(field, value);
+				request.session?.save(resolve);
+			} else {
+				resolve();
+			}
+		});
 	}
 }
 

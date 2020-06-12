@@ -1,3 +1,27 @@
+import { TrackData } from '../types';
+
+interface MergedData {
+	id: string,
+	
+	title: string,
+	artist: string,
+	album: string,
+	
+	ctitle: string,
+	cartist: string,
+	calbum: string,
+
+	mtype: Object,
+	platforms: {
+		[key: string]: TrackData
+	}
+}
+
+interface MatchData {
+	mtype: Object,
+	track: TrackData
+}
+
 class Compare {
 	
 	static matchTypes = [
@@ -26,12 +50,14 @@ class Compare {
 	}
 
 	static clearValue(value: string, pristine: bool = false) {
-		let clear = value.replace(/\s*\(.*?\)\s*/g,'');
-		if (pristine) clear = value.replace(/[^a-z0-9]/gi,'');
+		let clear = value;
+		let clear = clear.replace(/\s*\(.*?\)\s*/g,'');
+		let clear = clear.replace(/\s*\[.*?\]\s*/g,'');
+		if (pristine) clear = clear.replace(/[^a-z0-9]/gi,'');
 		return clear;
 	}
 
-	static matchInList(atrack: any, list: any[]) {
+	static matchInList(atrack: TrackData, list: TrackData[]) : MatchData {
 		for (var matchType of Compare.matchTypes) {
 			
 			const a = {title: atrack.ctitle, artist: atrack.cartist, album: atrack.calbum};
@@ -62,6 +88,41 @@ class Compare {
 			var found = similar.find(match => match.title && match.artist && (match.album || matchType.ignoreAlbum));
 			if (found) return {mtype:found.mtype, track:found.track};
 		}
+	}
+
+	static createMerge(platform: string, track: TrackData) : MergedData {
+		const { id, title, artist, album, ctitle, cartist, calbum } = track;
+		const entry = { id:platform+'-'+id, title, artist, album, ctitle, cartist, calbum, platforms:{} };
+		entry.platforms[platform] = track;
+		return entry;
+	}
+
+	static mergeLists(akey: string, alist: TrackData[], bkey: string, blist: TrackData[]) {		
+		const merged = [] as MergedData[];
+
+		alist = Array.from(alist);
+		blist = Array.from(blist);
+		
+		while (alist.length) {
+			const atrack = alist.shift() as TrackData;
+			const entry = Compare.createMerge(akey, atrack);
+			const match = Compare.matchInList(atrack, blist);
+			if (match) {
+				entry.mtype = match.mtype
+				entry.platforms[bkey] = match.track;
+				const index = blist.indexOf(match.track);
+				if (index >= 0) blist.splice(index,1);
+			}
+			merged.push(entry);
+		}
+
+		while (blist.length) {
+			const btrack = blist.shift() as TrackData;
+			const entry = Compare.createMerge(bkey, btrack);
+			merged.push(entry);
+		}
+
+		return merged;
 	}
 }
 
