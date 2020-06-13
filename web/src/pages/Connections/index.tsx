@@ -29,6 +29,7 @@ interface LoginData {
 interface SocialCardProps {
 	name: string, 
 	perms: string[],
+	clickHandler: Function,
 	login?: LoginData
 }
 
@@ -43,9 +44,8 @@ const SocialCard = (props: SocialCardProps) => {
 	
 	function handleClickDisconnect() {
 		setBusy(true);
-		api.get('/'+platform+'/disconnect').then(feed => {
-
-		});
+		props.clickHandler(platform);
+		setBusy(false);
 	}
 
 	return (
@@ -83,13 +83,19 @@ const Connections = () => {
 		});
 	}
 	
+	function handleClickDisconnect(platform: string) {
+		api.post('/'+platform+'/logout').then(feed => {
+			getProfile();
+		});
+	}
+	
 	useEffect(getProfile,[]);
 
 	return (
 		<MainView guest={true}>
 			<div className='ui cards'>
-				<SocialCard name='Deezer' login={profile?.deezer}  perms={['Basic-Access','Manage-Library']} />
-				<SocialCard name='Spotify' login={profile?.spotify}  perms={['User-Library-Read','User-Library-Manage']} />
+				<SocialCard name='Deezer' login={profile?.deezer} clickHandler={handleClickDisconnect} perms={['Basic-Access','Manage-Library']} />
+				<SocialCard name='Spotify' login={profile?.spotify} clickHandler={handleClickDisconnect} perms={['User-Library-Read','User-Library-Manage']} />
 			</div>
 		</MainView>
 	)

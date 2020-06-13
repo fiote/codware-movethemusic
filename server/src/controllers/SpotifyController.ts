@@ -169,6 +169,11 @@ class SpotifyController {
 			response.json({status:false, error:'failed_to_search', logout:true, feed});
 		})	
 	}
+
+	async logout(request: Request, response: Response) {
+		await SP.logout(request);		
+		response.join({status:true});
+	}
 }
 
 

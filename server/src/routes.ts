@@ -17,12 +17,14 @@ routes.get('/tracklist',tracklistController.get);
 // routes.get('/deezer/auth',deezerController.getAuth);
 routes.get('/deezer/authcode',deezerController.checkCode);
 routes.post('/deezer/findtrack',deezerController.findTrack);
+routes.post('/deezer/logout',deezerController.logout);
 // routes.get('/deezer/tracklist',deezerController.getTrackList);
 // routes.post('/deezer/find',deezerController.findTrack);
 
 // routes.get('/spotify/auth',spotifyController.getAuth);
 routes.get('/spotify/authcode',spotifyController.checkCode);
 routes.post('/spotify/findtrack',spotifyController.findTrack);
+routes.post('/spotify/logout',spotifyController.logout);
 // routes.get('/spotify/tracklist',spotifyController.getTrackList);
 
 routes.post('/dosomething',(request: Request, response: Response) => {
