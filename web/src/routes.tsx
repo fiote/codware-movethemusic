@@ -6,6 +6,7 @@ import Tracks from './pages/Tracks';
 import TracksCopy from './pages/TracksCopy';
 import Artists from './pages/Artists';
 import Albums from './pages/Albums';
+import Connections from './pages/Connections';
 
 import SocialCallback from './pages/SocialCallback';
 
@@ -17,6 +18,7 @@ const Routes = () => {
 			<Route component={TracksCopy} path="/tracks-copy" exact />
 			<Route component={Artists} path="/artists" exact />
 			<Route component={Albums} path="/albums" exact />
+			<Route component={Connections} path="/connections" exact />
 			<Route component={SocialCallback} path="/:plaform/callback" />
 		</BrowserRouter>
 	)

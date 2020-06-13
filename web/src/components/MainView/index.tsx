@@ -23,6 +23,7 @@ interface MainViewProps {
 	sidemenu?: boolean,
 	title?: React.ReactNode,
 	loading?: string | null,
+	guest?: boolean | null,
 	progressbar?: number | null,
 	progresstext?: React.ReactNode | null,
 	children?: React.ReactNode
@@ -63,6 +64,10 @@ const MainView = (props: MainViewProps) => {
 			<Link to="/albums" className="link">
 				<i className="compact disc icon"></i> <label>Albums</label>
 			</Link>
+			<hr/>
+			<Link to="/connections" className="link">
+				<i className="wifi icon"></i> <label>Connections</label>
+			</Link>
 		</div>
 	) : null;
 
@@ -78,7 +83,7 @@ const MainView = (props: MainViewProps) => {
 	}
 
 	if (profile) {
-		if (!profile?.deezer.logged && !profile?.spotify.logged) {
+		if (!profile?.deezer.logged && !profile?.spotify.logged && !props.guest) {
 			content_body = <ContentPanel>You need to connect to a platform first.</ContentPanel>;
 		}
 	}

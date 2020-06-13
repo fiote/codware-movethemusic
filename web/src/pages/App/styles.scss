@@ -29,30 +29,6 @@ body {
 		}
 	}
 
-	#sidebar {
-		height: $mainheight;
-		background: #F3F3F3;
-		color: $textcolor;
-		padding: 10px;
-		font-weight: bold;
-
-		.menu {
-			padding-top: 20px;
-
-			.link {
-				padding: 10px;
-				display: block;
-				color: inherit;
-				* {
-					cursor: pointer;
-				}
-				&:hover {
-					color: lighten($color: $textcolor, $amount: 20%);
-				}
-			}
-		}
-	}
-
 	#content {
 		height: $mainheight;
 		background-color: #F8F8F8;

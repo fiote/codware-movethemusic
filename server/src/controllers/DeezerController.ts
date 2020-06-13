@@ -8,11 +8,11 @@ const app_id = process.env.DEEZER_APPID;
 const secret_key = process.env.DEEZER_SECRETKEY;
 
 const redirect_uri = encodeURIComponent(process.env.REDIRECT_URL+'/deezer/callback');
-const authUrl = 'https://connect.deezer.com/oauth/auth.php?app_id='+app_id+'&redirect_uri='+redirect_uri+'&perms=basic_access,email,manage_library';		
+const authUrl = 'https://connect.deezer.com/oauth/auth.php?app_id='+app_id+'&redirect_uri='+redirect_uri+'&perms=basic_access,manage_library';
 
 interface DzTrackData {
 	id: number,
-	title: string,
+	title: string, 
 	artist: {
 		name: string
 	},
