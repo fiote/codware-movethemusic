@@ -102,6 +102,8 @@ class Compare {
 
 		alist = Array.from(alist);
 		blist = Array.from(blist);
+
+		const matched:MergedData[] = [];
 		
 		while (alist.length) {
 			const atrack = alist.shift() as TrackData;
@@ -110,14 +112,20 @@ class Compare {
 			if (match) {
 				entry.mtype = match.mtype
 				entry.platforms[bkey] = match.track;
-				const index = blist.indexOf(match.track);
-				if (index >= 0) blist.splice(index,1);
+				matched.push(match.track);
+				match.track.merged = true;
 			}
 			merged.push(entry);
 		}
 
+		while (matched.length) {
+			const track = matched.shift();
+			const index = blist.indexOf(track);
+			if (index >= 0) blist.splice(index,1);
+		}
+
 		while (blist.length) {
-			const btrack = blist.shift() as TrackData;
+			const btrack:TrackData = blist.shift();
 			const entry = Compare.createMerge(bkey, btrack);
 			merged.push(entry);
 		}

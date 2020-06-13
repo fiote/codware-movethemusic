@@ -113,6 +113,18 @@ body {
 	}
 }
 
+.text-main {
+	color: $textcolor;
+	font-weight: bold;
+	font-size: 22px;
+	margin-bottom: 10px;
+}
+.text-aux {
+	color: $secondcolor;
+	margin-top: 5px;
+}
+
 *::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.03) !important; border-radius: 5px !important; }
+
 
 

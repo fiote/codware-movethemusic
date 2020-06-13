@@ -7,7 +7,8 @@ interface TrackData {
 	image_url: string,
 	ctitle: string,
 	cartist: string,
-	calbum: string
+	calbum: string,
+	marged?: boolean
 }
 
 export interface TrackList extends Array<TrackData> { }

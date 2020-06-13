@@ -74,6 +74,14 @@ class DeezerController {
 		const data = DZ.data(request);
 		return {logged: data?.auth ? true : false, authUrl};
 	}
+
+	static getTracklist(request: Request) {
+		return Cache.sessionGet(request,'deezerTracklist') || [];
+	}
+
+	static setTracklist(request: Request, tracks: any[]) {
+		return Cache.sessionSet(request,'deezerTracklist',tracks);
+	}
 	
 	static async getUserId(request: Request) {
 		return new Promise(resolve => {
@@ -128,42 +136,35 @@ class DeezerController {
 		response.json({status:true});
 	}
 
-	async static getTracks(request: Request, forceRefresh: bool) : TrackListData {
+	async loadTracks(request: Request, response: Response) {
 		const data = DZ.data(request);
-		if (!data) return {status:false};
+		if (!data) return response.json({status:false, error:'no_session_data'});
 
-		if (!forceRefresh) {
-			const savedTracks = Cache.sessionGet(request,'deezerTracklist');		
-			if (savedTracks) return {statust:true, tracks:savedTracks};
-		}
+		const ipage = Number(request.params.page) || 1;		
+		const tracks = DeezerController.getTracklist(request);
+		const pagedata = await DeezerController.getTracksPage(request, ipage);
+		
+		pagedata.tracks.forEach(track => {
+			var exists = tracks.find(saved => saved.id == track.id);
+			if (!exists) tracks.push(track);
+		});
+		
+		await DeezerController.setTracklist(request,tracks);
 
-		let tracks = [];
-		const ilimit = 100;
-		let fetching = true;
-		let ipage = 1;
-
-		while (fetching) {
-			fetching = false;
-			let ioffset = (ipage-1)*ilimit;		
-			const result = await DeezerController.getTracksPage(request, '/playlist/'+data.playlistId+'/tracks?limit='+ilimit+'&index='+ioffset);
-			if (result.status) {
-				tracks.push(...result.tracks);
-				if (result.next) {
-					fetching = true;
-					ipage++;
-				}
-			} else {
-				return {status:true};
-			}
-		} 
-
-		await Cache.sessionSet(request,'deezerTracklist',tracks);
-		return {status:true, tracks};
+		const loaded = tracks.length;
+		const total = pagedata.total;
+		const next = (loaded < total && pagedata.next) ? ipage+1 : null;
+		response.json({status:true, next, loaded, total, done:loaded >= total});
 	}
 
-	async static getTracksPage(request: Request, pageurl: string) {
+	async static getTracksPage(request: Request, ipage: number) {
+		const data = DZ.data(request);
+
+		const ilimit = 50;
+		let ioffset = (ipage-1)*ilimit;		
+
 		return new Promise(resolve => {
-			DZ.get(request, pageurl, true).then(async result => {
+			DZ.get(request, '/playlist/'+data.playlistId+'/tracks?limit='+ilimit+'&index='+ioffset, true).then(async result => {
 				const resultlist = result?.data?.data;
 				if (!resultlist) {
 					await DZ.logout(request);
@@ -171,9 +172,10 @@ class DeezerController {
 				}
 				const tracks = resultlist.map(item => DZ.parse(item));
 				const next = result?.data?.next;
-				return resolve({status:true, next, tracks});
-			}).catch(result => {
-				return resolve({status:false});
+				return resolve({status:true, next, tracks, total: result.data.total});
+			}).catch(async result => {
+				await DZ.logout(request);
+				return resolve({status:false, error:'catch', logout:true});
 			});
 		});	
 	}
@@ -199,7 +201,11 @@ class DeezerController {
 			DZ.post(request, '/user/me/tracks?track_id='+track_id, true).then(async feed => {
 				const {title, artist, album} = track;
 				const newtrack = DZ.new(track_id, title, artist, album);
-				await Cache.sessionPush(request, 'deezerTracklist', newtrack);
+				
+				const tracklist = DeezerController.getTracklist(request);
+				tracklist.push(newtrack);
+				await DeezerController.setTracklist(request,tracklist);
+
 				response.json({status:true, newtrack});
 			}).catch(feed => {
 				response.json({status:false, error:'failed_to_add', feed});

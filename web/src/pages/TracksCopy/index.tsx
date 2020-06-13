@@ -80,7 +80,7 @@ const TracksCopy = (props: TracksCopyProps) => {
 		<ContentTitle>Copying tracks from {source.toUpperCase()} to {target.toUpperCase()}, please standby...</ContentTitle>
 	)
 
-	if (!currentTrack) return <MainView title={title} loading='Preparing list...'/>;
+	if (!currentTrack) return <MainView title={title} loading='preparing list'/>;
 
 	const ptext = (
 		<div>

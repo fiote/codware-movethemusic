@@ -17,7 +17,7 @@ const SocialButton = (props: SocialButtonProps) => {
 		localStorage.setItem('redirect-after-login',window.location.pathname);
 		window.location.href = props.data.authUrl;
 	}
-	
+
 	return (
 		<div className={btnClass} onClick={handleClickPlatform}>
 			<img src={btnIcon} alt={props.platform} /> 

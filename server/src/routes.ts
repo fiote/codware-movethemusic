@@ -12,10 +12,12 @@ const profileController = new ProfileController();
 const tracklistController = new TracklistController();
 
 routes.get('/profile',profileController.get);
-routes.get('/tracklist',tracklistController.get);
+routes.get('/loadtracks/:platform',tracklistController.load);
+routes.get('/tracklist/',tracklistController.get);
 
 // routes.get('/deezer/auth',deezerController.getAuth);
 routes.get('/deezer/authcode',deezerController.checkCode);
+routes.get('/deezer/loadtracks/:page?',deezerController.loadTracks);
 routes.post('/deezer/findtrack',deezerController.findTrack);
 routes.post('/deezer/logout',deezerController.logout);
 // routes.get('/deezer/tracklist',deezerController.getTrackList);
@@ -23,6 +25,7 @@ routes.post('/deezer/logout',deezerController.logout);
 
 // routes.get('/spotify/auth',spotifyController.getAuth);
 routes.get('/spotify/authcode',spotifyController.checkCode);
+routes.get('/spotify/loadtracks/:page?',spotifyController.loadTracks);
 routes.post('/spotify/findtrack',spotifyController.findTrack);
 routes.post('/spotify/logout',spotifyController.logout);
 // routes.get('/spotify/tracklist',spotifyController.getTrackList);

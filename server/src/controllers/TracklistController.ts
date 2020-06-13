@@ -5,11 +5,21 @@ import Compare from '../classes/Compare';
 
 class TracklistController {
 	async get(request: Request, response: Response) {		
-		const sptracks = await SpotifyController.getTracks(request);
-		const dztracks = await DeezerController.getTracks(request);
+		const sptracks = SpotifyController.getTracklist(request);
+		const dztracks = DeezerController.getTracklist(request);
+		const tracks = Compare.mergeLists('deezer', dztracks || [], 'spotify', sptracks || []);
+	 	response.json({status: sptracks || dztracks, tracks, sptracks, dztracks});
+	}
+	
+	async load(request: Request, response: Response) {		
+		const { params, query, body} = request;
+		
+		const platform = request.params.platform;
 
-		const tracks = Compare.mergeLists('deezer', dztracks.tracks || [], 'spotify', sptracks.tracks || []);
-	 	response.json({status: sptracks.status || dztracks.status, tracks});
+		const info = (platform == 'deezer') ? await DeezerController.getTracksInfo(request) : null;
+
+		response.json({info});
+
 	}
 }
 

@@ -72,6 +72,14 @@ class SpotifyController {
 		const data = SP.data(request);
 		return {logged: data?.auth ? true : false, authUrl};
 	}
+
+	static getTracklist(request: Request) {
+		return Cache.sessionGet(request,'spotifyTracklist') || [];
+	}
+
+	static setTracklist(request: Request, tracks: any[]) {
+		return Cache.sessionSet(request,'spotifyTracklist',tracks);
+	}
 	
 	async checkCode(request: Request, response: Response) {
 		const accessToken = request.query.access_token;
@@ -86,39 +94,35 @@ class SpotifyController {
 		return response.json({status:true});
 	}
 
-	async static getTracks(request: Request, forceRefresh: bool) : TrackListData {		
-		if (!forceRefresh) {
-			const savedTracks = Cache.sessionGet(request,'spotifyTracklist');		
-			if (savedTracks) return {status:true, tracks:savedTracks};
-		}		
+	async loadTracks(request: Request, response: Response) {
+		const data = SP.data(request);
+		if (!data) return response.json({status:false, error:'no_session_data'});
 
-		let tracks = [];
-		const ilimit = 20;
-		let fetching = true;
-		let ipage = 1;
+		const ipage = Number(request.params.page) || 1;		
+		const tracks = SpotifyController.getTracklist(request);
+		const pagedata = await SpotifyController.getTracksPage(request, ipage);
 
-		while (fetching) {
-			fetching = false;
-			let ioffset = (ipage-1)*ilimit;		
-			const result = await SpotifyController.getTracksPage(request, '/me/tracks?offset='+ioffset+'&limit='+ilimit);
-			if (result.status) {
-				tracks.push(...result.tracks);
-				if (result.next) {
-					fetching = true;
-					ipage++;
-				}
-			} else {
-				return {status:true};
-			}
-		} 
+		pagedata.tracks.forEach(track => {
+			var exists = tracks.find(saved => saved.id == track.id);
+			if (!exists) tracks.push(track);
+		});
+		
+		await SpotifyController.setTracklist(request,tracks);
 
-		await Cache.sessionSet(request,'spotifyTracklist',tracks);
-		return {status:true,tracks} as TrackListData;
+		const loaded = tracks.length;
+		const total = pagedata.total;
+		const next = (loaded < total && pagedata.next) ? ipage+1 : null;	
+		response.json({status:true, next, loaded, total, done:loaded >= total});
 	}
 	
-	async static getTracksPage(request: Request, pageurl: string) {
+	async static getTracksPage(request: Request, ipage: number) {
+		const data = SP.data(request);
+
+		const ilimit = 50;
+		let ioffset = (ipage-1)*ilimit;		
+
 		return new Promise(resolve => {
-			SP.get(request, pageurl, true).then(async result => {
+			SP.get(request, '/me/tracks?offset='+ioffset+'&limit='+ilimit, true).then(async result => {
 				const resultlist = result?.data?.items;
 				if (!resultlist) {
 					await SP.logout(request);
@@ -126,10 +130,12 @@ class SpotifyController {
 				}
 				const tracks = resultlist.map((item:any) => SP.parse(item.track));
 				const next = result?.data?.next;
-				return resolve({status:true, next, tracks});
+				const total = result.data.total;
+				return resolve({status:true, next, tracks, total});
 			}).catch(async result => {
 				await SP.logout(request);
-				return resolve({status:false, logout:true});
+				const feed = result.toJSON();
+				resolve({status:false, error:feed, logout:true});
 			});
 		});	
 
@@ -158,14 +164,18 @@ class SpotifyController {
 			SP.put(request, '/me/tracks?ids='+track_id).then(async feed => {
 				const {title, artist, album} = track;
 				const newtrack = SP.new(track_id, title, artist, album);
-				await Cache.sessionPush(request, 'spotifyTracklist', newtrack);
+
+				const tracklist = SpotifyController.getTracklist(request);
+				tracklist.push(newtrack);
+				await SpotifyController.setTracklist(request,tracklist);
+				
 				response.json({status:true, newtrack});
 			}).catch(feed => {
 				// SP.logout(request);
 				response.json({status:false, error:'failed_to_add', feed});
 			})
-		}).catch(feed => {
-			SP.logout(request);
+		}).catch(async feed => {
+			await SP.logout(request);
 			response.json({status:false, error:'failed_to_search', logout:true, feed});
 		})	
 	}

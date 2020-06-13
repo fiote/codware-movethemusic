@@ -41,7 +41,7 @@ const SocialCallback = () => {
 		});
 	});
 
-	return <MainView loading='Authenticating...' guest={true} />
+	return <MainView loading='authenticating' guest={true} />
 }
 
 export default SocialCallback;

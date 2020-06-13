@@ -84,7 +84,7 @@ const MainView = (props: MainViewProps) => {
 	)) : null;
 
 	if (params.loading) {
-		content_body = <ContentPanel type="timer">{params.loading}</ContentPanel>;
+		content_body = <ContentPanel type="timer"><div className="text-main">{params.loading}</div></ContentPanel>;
 	}
 
 	if (profile) {

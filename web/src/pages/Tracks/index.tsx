@@ -2,10 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { useHistory } from 'react-router-dom';
 
 import MainView from '../../components/MainView';
+import ContentPanel from '../../components/ContentPanel';
 import api from '../../services/api';
 import Swal from 'sweetalert2'; 
 
 import './index.scss';
+import imgMusic from '../../images/music.png';
+
+interface TrackListStatus {
+	status: boolean,
+	done?: boolean,
+	next?: number,
+	loaded?: number,
+	total?: number
+}
 
 const Tracks = () => {
 	const history = useHistory();
@@ -21,12 +31,46 @@ const Tracks = () => {
 	const [loading,setLoading] = useState<boolean>(true);
 	const [sideFilters,setSideFilters] = useState<any[]>([]);
 	const [tracks,setTracks] = useState<MergedData[]>();
-	const [filteredTracks,setFilteredTracks] = useState<MergedData[]>();
+	const [filteredTracks,setFilteredTracks] = useState<MergedData[]>([]);
 
 	let timeoutSearch:any = null;
+	
+	const [dzStatus,setDzStatus] = useState<TrackListStatus>();
+	const [spStatus,setSpStatus] = useState<TrackListStatus>();
+
+	const [profile,setProfile] = useState<Profile>();
 
 	useEffect(() => {
-		api.get<TrackListResponse>('/tracklist').then(feed => {
+		api.get<Profile>('/profile').then(feed => {
+			setProfile(feed.data);
+		});
+	},[]);
+
+
+	function loadTracks(platform: string, currentStatus: TrackListStatus, setStatus: Function) {
+		if (!currentStatus?.next || currentStatus?.done) return;
+		api.get('/'+platform+'/loadtracks/'+currentStatus.next).then(feed => {
+			console.log(platform, feed.data);	
+			if (feed.data.status) return setStatus(feed.data);
+			setStatus((st:TrackListStatus) => ({...st, done:true}));
+		}).catch(feed => {
+			console.error(platform,'/loadtracks/','ERROR',feed);
+		});
+	}
+
+	useEffect(() => { dzStatus && loadTracks('deezer', dzStatus, setDzStatus); },[dzStatus]);
+	useEffect(() => { spStatus && loadTracks('spotify', spStatus, setSpStatus); },[spStatus]);
+
+	useEffect(() => {
+		setDzStatus({status:true, next:1});
+		setSpStatus({status:true, next:1});
+	},[]);
+
+	useEffect(() => {
+		if (!dzStatus?.done) return;
+		if (!spStatus?.done) return;	
+		api.get<TrackListResponse>('/tracklist').then(feed => {			
+			console.log(feed);
 			if (feed.data.status) {
 				setTracks(feed.data.tracks);
 				setLoading(false);
@@ -34,7 +78,7 @@ const Tracks = () => {
 				console.error(feed);
 			}
 		});
-	},[]);
+	},[dzStatus,spStatus]);
 
 	useEffect(() => {
 		let newCounts = {total:0, both:0, deezer:0, spotify:0};
@@ -79,7 +123,7 @@ const Tracks = () => {
 			if (!plats.includes('deezer')) newMissing.deezer.push(merged);
 			if (!plats.includes('spotify')) newMissing.spotify.push(merged);
 			return true;
-		});
+		}) || [];
 		setFilteredTracks(filtered);
 		setMissing(newMissing);		
 	}, [tracks, side, search]);
@@ -128,8 +172,20 @@ const Tracks = () => {
 		localStorage.setItem('tracks-filter-side',newSide);
 	}
 
+	if (loading) {
+		return (
+			<MainView>
+				<ContentPanel icon={imgMusic}>
+					<div className="text-main">fetching tracks</div>
+					<div className="text-aux">Deezer: {dzStatus?.loaded || 0}/{dzStatus?.total || '?'}</div>
+					<div className="text-aux">Spotify: {spStatus?.loaded || 0}/{spStatus?.total || '?'}</div>
+				</ContentPanel>
+			</MainView>
+		)
+	}
+
 	return (
-		<MainView loading={loading ? 'Fetching tracks...' : null}>
+		<MainView>
 			<div id="tracks-header" className="p-1 mb-2">
 
 				<div id="tracks-search" className="">
@@ -168,7 +224,7 @@ const Tracks = () => {
 				</div>	
 			</div>
 			<div className='table-body'>
-				{filteredTracks && filteredTracks.map(merged => <TrackRow key={merged.id} merged={merged} onChanged={handleChangeTrack} />)}
+				{filteredTracks ? filteredTracks.map(merged => <TrackRow key={merged.id} profile={profile} merged={merged} onChanged={handleChangeTrack} />) : null}
 				{filteredTracks && filteredTracks.length === 0 && (					
 					<div className='table-row row-empty'>
 						<div className='cell-full'>Ops, nothing to show here!</div>
@@ -181,6 +237,7 @@ const Tracks = () => {
 
 interface TrackRowProps {
 	merged: MergedData,
+	profile?: Profile,
 	onChanged: Function
 }
 
@@ -209,17 +266,27 @@ const TrackRow = (props: TrackRowProps) => {
 			<div className="cell-artist">{props.merged.artist}</div>
 			<div className="cell-album">{props.merged.album}</div>
 			<div className="cell-platform text-center">
-				<MatchButton merged={props.merged} platform='deezer' busy={busy} clickHandler={handleClickRow} />
+				<MatchButton merged={props.merged} platform='deezer' profile={props.profile} busy={busy} clickHandler={handleClickRow} />
 			</div>
 			<div className="cell-platform text-center">
-				<MatchButton merged={props.merged} platform='spotify' busy={busy} clickHandler={handleClickRow} />
+				<MatchButton merged={props.merged} platform='spotify' profile={props.profile} busy={busy} clickHandler={handleClickRow} />
 			</div> 
 		</div>		
 	)
 }
 
+interface MatchButtonProps {
+	merged: MergedData,
+	platform: string,
+	busy: boolean,
+	profile?: Profile,
+	clickHandler: Function
+}
+
 const MatchButton = (props: MatchButtonProps) => {
 	if (props.merged.platforms[props.platform]) return <i className='check green icon'></i>;
+
+	if (!props.profile || !props.profile[props.platform].logged) return <i className='question inverted grey icon'></i>;
 
 	function handleClickMatch() {
 		props.clickHandler(props.platform);
@@ -272,11 +339,15 @@ interface MissingData {
 	[key: string]: MergedData[]
 }
 
-interface MatchButtonProps {
-	merged: MergedData,
-	platform: string,
-	busy: boolean,
-	clickHandler: Function
+interface SocialStatus {
+	logged: boolean,
+	authUrl: string
+}
+
+interface Profile {
+	deezer: SocialStatus,
+	spotify: SocialStatus,
+	[key: string]: SocialStatus
 }
 
 export default Tracks;
