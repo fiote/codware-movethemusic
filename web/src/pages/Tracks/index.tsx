@@ -1,12 +1,14 @@
-import React, { useState, useEffect, KeyboardEvent } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useHistory } from 'react-router-dom';
+
 import MainView from '../../components/MainView';
 import api from '../../services/api';
 import Swal from 'sweetalert2'; 
 
 import './index.scss';
 
-
 const Tracks = () => {
+	const history = useHistory();
 	const ls_side = localStorage.getItem('tracks-filter-side') || '';
 	const ls_search = localStorage.getItem('tracks-filter-search') || '';
 
@@ -14,7 +16,7 @@ const Tracks = () => {
 	const [search,setSearch] = useState<string>(ls_search);
 
 	const [counter,setCounter] = useState<TrackCounter>({});
-	const [missing,setMissing] = useState<TrackCounter>({});
+	const [missing,setMissing] = useState<MissingData>({deezer:[], spotify:[]});
 
 	const [loading,setLoading] = useState<boolean>(true);
 	const [sideFilters,setSideFilters] = useState<any[]>([]);
@@ -39,7 +41,7 @@ const Tracks = () => {
 		tracks && tracks.forEach(merged => {
 			const plats = Object.keys(merged.platforms);
 			newCounts.total++;
-			if (plats.length == 2) newCounts.both++;
+			if (plats.length === 2) newCounts.both++;
 			if (!plats.includes('deezer')) newCounts.spotify++;
 			if (!plats.includes('spotify')) newCounts.deezer++;
 		});
@@ -56,14 +58,15 @@ const Tracks = () => {
 	},[counter]);
 
 	useEffect(() => {
-		let newMissing = {deezer:0, spotify:0};
+		let newMissing = {deezer:[], spotify:[]} as MissingData;
+
 		const filtered = tracks?.filter(merged => {
 			const plats = Object.keys(merged.platforms);
 
 			if (side) {
-				if (side == 'both' && plats.length == 1) return false;
-				if (side == 'deezer' && plats.includes('spotify')) return false;
-				if (side == 'spotify' && plats.includes('deezer')) return false;
+				if (side === 'both' && plats.length === 1) return false;
+				if (side === 'deezer' && plats.includes('spotify')) return false;
+				if (side === 'spotify' && plats.includes('deezer')) return false;
 			}
 			if (search) {
 				let any = false;
@@ -73,8 +76,8 @@ const Tracks = () => {
 				if (!any) return false;
 			}
 
-			if (!plats.includes('deezer')) newMissing.deezer++;
-			if (!plats.includes('spotify')) newMissing.spotify++;
+			if (!plats.includes('deezer')) newMissing.deezer.push(merged);
+			if (!plats.includes('spotify')) newMissing.spotify.push(merged);
 			return true;
 		});
 		setFilteredTracks(filtered);
@@ -99,24 +102,25 @@ const Tracks = () => {
 		},100);
 	}
 
-	function handleClickSync(source: string, target: string) {
+	function handleClickCopy(source: string, target: string) {
 		const sourcex = source.toUpperCase();
 		const targetx = target.toUpperCase();
-		const qty = missing[source];
+		const newlist = missing[target];
+		const qty = newlist.length;
 		const extraText = (qty > 50) ? ' This can take a while.' : '';
+		
 		Swal.fire({
 			title: sourcex+' to '+targetx,
-			html: 'Are you sure you want to try to copy <b>'+qty+'</b> track'+(qty == 1 ? '' : 's')+' to your '+targetx+' account?'+extraText,
+			html: 'Are you sure you want to try to copy <b>'+qty+'</b> track'+(qty === 1 ? '' : 's')+' to your '+targetx+' account?'+extraText,
 			icon: 'question',
 			showCancelButton: true,
 			confirmButtonColor: '#3085d6',
 			cancelButtonColor: '#d33',
-			confirmButtonText: 'Yes, delete it!'
+			confirmButtonText: 'Yes, copy '+(qty === 1 ? 'it' : 'them')+'!',
+			cancelButtonText: 'No, nevermind'
 		}).then(result => {
-			if (result.value) {
-				Swal.fire('Deleted!', 'Your file has been deleted.','success');
-			}
-		})
+			if (result.value) history.push('/tracks-copy', { source, target, tracks: newlist });
+		});
 	}
 
 	function handleSideFilterClick(newSide: string) {
@@ -138,18 +142,18 @@ const Tracks = () => {
 				<div id="tracks-filters" className="ui buttons">
 					{sideFilters && sideFilters.map(sidef => {
 						return (
-							<button key={sidef.code} className={['ui','button',sidef.code == side ? 'active' : ''].join(' ')} onClick={() => handleSideFilterClick(sidef.code)} >{sidef.label} ({sidef.qty})</button>
+							<button key={sidef.code} className={['ui','button',sidef.code === side ? 'active' : ''].join(' ')} onClick={() => handleSideFilterClick(sidef.code)} >{sidef.label} ({sidef.qty})</button>
 						)
 					})}
 				</div>
 				<div id="tracks-actions" className="">
-					<button className="ui right labeled icon teal button btn-sync btn-dz" disabled={!missing['deezer']} onClick={() => handleClickSync('deezer','spotify')} >
+					<button className="ui right labeled icon teal button btn-sync btn-sp" disabled={missing.spotify.length === 0} onClick={() => handleClickCopy('deezer','spotify')} >
 						<i className="upload icon"></i>
-						Deezer to Spotify ({missing['deezer']})
+						Deezer to Spotify ({missing.spotify.length})
 					</button>
-					<button className="ui right labeled icon teal button btn-sync btn-sp" disabled={!missing['spotify']} onClick={() => handleClickSync('spotify','deezer')} >
+					<button className="ui right labeled icon teal button btn-sync btn-dz" disabled={missing.deezer.length === 0} onClick={() => handleClickCopy('spotify','deezer')} >
 						<i className="upload icon"></i>
-						Spotify to Deezer ({missing['spotify']})
+						Spotify to Deezer ({missing.deezer.length})
 					</button>
 				</div>
 			</div>
@@ -165,7 +169,7 @@ const Tracks = () => {
 			</div>
 			<div className='table-body'>
 				{filteredTracks && filteredTracks.map(merged => <TrackRow key={merged.id} merged={merged} onChanged={handleChangeTrack} />)}
-				{filteredTracks && filteredTracks.length == 0 && (					
+				{filteredTracks && filteredTracks.length === 0 && (					
 					<div className='table-row row-empty'>
 						<div className='cell-full'>Ops, nothing to show here!</div>
 					</div>
@@ -260,6 +264,12 @@ interface TrackListResponse {
 
 interface TrackCounter {
 	[key: string]: number
+}
+
+interface MissingData {
+	spotify: MergedData[],
+	deezer: MergedData[],
+	[key: string]: MergedData[]
 }
 
 interface MatchButtonProps {

@@ -1,0 +1,21 @@
+@import '../../config/vars.scss';
+
+.progress-bar {
+	position: absolute;
+	bottom: 0px; 
+	left:0px;
+	height: 4px;
+	transition: all 0.2s ease-in-out;
+	background: $textcolor;
+
+	.progress-text {
+		position: absolute;
+		left: 10px; 
+		bottom: 8px;
+		width: min-content;
+		overflow: visible;
+		font-size: 12px;
+		color: $secondcolor;
+		white-space: nowrap;
+	}
+}

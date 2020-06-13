@@ -8,7 +8,7 @@ class TracklistController {
 		const sptracks = await SpotifyController.getTracks(request);
 		const dztracks = await DeezerController.getTracks(request);
 
-		const tracks = Compare.mergeLists('deezer', dztracks.tracks, 'spotify', sptracks.tracks);
+		const tracks = Compare.mergeLists('deezer', dztracks.tracks || [], 'spotify', sptracks.tracks || []);
 	 	response.json({status: sptracks.status || dztracks.status, tracks});
 	}
 }

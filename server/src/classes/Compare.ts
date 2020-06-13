@@ -91,8 +91,8 @@ class Compare {
 	}
 
 	static createMerge(platform: string, track: TrackData) : MergedData {
-		const { id, title, artist, album, ctitle, cartist, calbum } = track;
-		const entry = { id:platform+'-'+id, title, artist, album, ctitle, cartist, calbum, platforms:{} };
+		const { id, title, artist, album, ctitle, cartist, calbum, image_url } = track;
+		const entry = { id:platform+'-'+id, title, artist, album, image_url, ctitle, cartist, calbum, platforms:{} };
 		entry.platforms[platform] = track;
 		return entry;
 	}

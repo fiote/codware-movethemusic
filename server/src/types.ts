@@ -4,6 +4,7 @@ interface TrackData {
 	artist: string,
 	album: string,
 	url: string,
+	image_url: string,
 	ctitle: string,
 	cartist: string,
 	calbum: string
@@ -16,6 +17,7 @@ interface MergedData {
 	title: string,
 	artist: string,
 	album: string,
+	image_url: string,
 	mtype: Object,
 	platforms: {
 		[key: string]: TrackData

@@ -3,6 +3,7 @@ import { Route, BrowserRouter } from 'react-router-dom';
 
 import Home from './pages/Home';
 import Tracks from './pages/Tracks';
+import TracksCopy from './pages/TracksCopy';
 import Artists from './pages/Artists';
 import Albums from './pages/Albums';
 
@@ -13,6 +14,7 @@ const Routes = () => {
 		<BrowserRouter>
 			<Route component={Home} path="/" exact />
 			<Route component={Tracks} path="/tracks" exact />
+			<Route component={TracksCopy} path="/tracks-copy" exact />
 			<Route component={Artists} path="/artists" exact />
 			<Route component={Albums} path="/albums" exact />
 			<Route component={SocialCallback} path="/:plaform/callback" />

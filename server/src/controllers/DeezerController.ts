@@ -1,13 +1,14 @@
 import { Request, Response } from 'express';
 import Cache from '../classes/Cache';
 import axios from 'axios';
-import { TrackListData, TrackData } from '../types';
+import Compare from '../classes/Compare'; 
+import { TrackListData, TrackData, MergedData } from '../types';
   
 const app_id = process.env.DEEZER_APPID;
 const secret_key = process.env.DEEZER_SECRETKEY;
 
 const redirect_uri = encodeURIComponent(process.env.REDIRECT_URL+'/deezer/callback');
-const authUrl = 'https://connect.deezer.com/oauth/auth.php?app_id='+app_id+'&redirect_uri='+redirect_uri+'&perms=basic_access,email';		
+const authUrl = 'https://connect.deezer.com/oauth/auth.php?app_id='+app_id+'&redirect_uri='+redirect_uri+'&perms=basic_access,email,manage_library';		
 
 interface DzTrackData {
 	id: number,
@@ -37,18 +38,34 @@ class DZ {
 		return axios.get('https://api.deezer.com'+endpoint);
 	}
 
+	static post(request: Request, endpoint: string, authed: boolean) {
+		if (endpoint.indexOf('?') < 0) endpoint += '?foo';
+		if (authed) endpoint += '&' + DZ.data(request).auth;
+		return axios.post('https://api.deezer.com'+endpoint);
+	}
+
+	static new(id, title, artist, album) : TrackData {
+		const data = {id, title, artist, album};
+		return DZ.addc(data);
+	}
+
+	static addc(track: TrackData) : TrackData{
+		track.ctitle = track.title.replace(/\s*\(.*?\)\s*/g, "").toLowerCase();
+		track.cartist = track.artist.toLowerCase();
+		track.calbum = track.album.toLowerCase();
+		return track;
+	}
+
 	static parse(track: DzTrackData) : TrackData {
-		const data = {
+		const data : TrackData = {
 			id: track.id,
 			title: track.title,
 			artist: track.artist.name,
 			album: track.album.title,
+			image_url: track.album.cover_medium,
 			ctitle: '', cartist: '', calbum:''
 		};
-		data.ctitle = data.title.toLowerCase();
-		data.cartist = data.artist.toLowerCase();
-		data.calbum = data.album.toLowerCase();
-		return data;
+		return DZ.addc(data);
 	}
 }
 
@@ -97,14 +114,14 @@ class DeezerController {
 		deezerData.userId = await DeezerController.getUserId(request);
 		if (!deezerData.userId) {
 			await DZ.logout(request);
-			return response.json({status:false, error:'no_user_id'})
+			return response.json({status:false, error:'no_user_id', logout:true});
 		}
 		await Cache.sessionSet(request, 'deezerData', deezerData);
 
 		deezerData.playlistId = await DeezerController.getPlaylistId(request);
 		if (!deezerData.playlistId) {
 			await DZ.logout(request);
-			return response.json({status:false, error:'no_playlist_id'})
+			return response.json({status:false, error:'no_playlist_id', logout:true});
 		}
 		await Cache.sessionSet(request, 'deezerData', deezerData);
 
@@ -150,7 +167,7 @@ class DeezerController {
 				const resultlist = result?.data?.data;
 				if (!resultlist) {
 					await DZ.logout(request);
-					return resolve({status:false});
+					return resolve({status:false, logout:true});
 				}
 				const tracks = resultlist.map(item => DZ.parse(item));
 				const next = result?.data?.next;
@@ -162,9 +179,32 @@ class DeezerController {
 	}
 
 	async findTrack(request: Request, response: Response) {
-		var deezerData = getDeezerData(request);
-		if (!deezerData) return response.json({status:false});
-		return response.json({status:true, params:request.params});
+		const track = request.body as MergedData;
+		const data = Compare.getData(track);
+
+		const q = [data.title,data.artist,data.album]; // ,'album:'+data.album,'artist:'+data.artist];
+
+		DZ.get(request, '/search/track?q='+encodeURIComponent(q.join(' ')),true).then(async result => {
+			const resultlist = result?.data?.data;
+			if (!resultlist) {
+				await DZ.logout(request);
+				return resolve({status:false, logout:true});
+			}
+			const tracklist = resultlist.map(item => DZ.parse(item));
+			const match = Compare.matchInList(track, tracklist);
+			
+			if (!match) return response.json({status:false, error:'no_match', data, tracklist});
+			const track_id = match.track.id;
+
+			DZ.post(request, '/user/me/tracks?track_id='+track_id, true).then(async feed => {
+				const {title, artist, album} = track;
+				const newtrack = DZ.new(track_id, title, artist, album);
+				await Cache.sessionPush(request, 'deezerTracklist', newtrack);
+				response.json({status:true, newtrack});
+			}).catch(feed => {
+				response.json({status:false, error:'failed_to_add', feed});
+			})
+		});
 	}
 }
 

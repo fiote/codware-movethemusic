@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import './styles.scss';
 
 import api from '../../services/api';
 
@@ -20,7 +21,10 @@ interface Profile {
 
 interface MainViewProps { 
 	sidemenu?: boolean,
+	title?: React.ReactNode,
 	loading?: string | null,
+	progressbar?: number | null,
+	progresstext?: React.ReactNode | null,
 	children?: React.ReactNode
 }
 
@@ -62,15 +66,12 @@ const MainView = (props: MainViewProps) => {
 		</div>
 	) : null;
 
-	content_top = (profile) ? (		
-		<>
-			<div id="platforms">
-				<SocialButton data={profile?.deezer} platform='Deezer' />
-				<SocialButton data={profile?.spotify} platform='Spotify' />
-			</div>
-			<TopAuthor/>
-		</>
-	) : null;
+	content_top = (profile) ? (props.title || (		
+		<div id="platforms">
+			<SocialButton data={profile?.deezer} platform='Deezer' />
+			<SocialButton data={profile?.spotify} platform='Spotify' />
+		</div>
+	)) : null;
 
 	if (params.loading) {
 		content_body = <ContentPanel type="timer">{params.loading}</ContentPanel>;
@@ -97,9 +98,11 @@ const MainView = (props: MainViewProps) => {
 			<div id='content'>
 				<div className="top">
 					{content_top}
+					<TopAuthor/>
 				</div>
 				<div className="body">
 					{content_body}
+					{props.progressbar ? (<div className="progress-bar" style={{width: props.progressbar+'%'}}><div className='progress-text'>{props.progresstext || null}</div></div>) : null}
 				</div>
 			</div>
 		</div>

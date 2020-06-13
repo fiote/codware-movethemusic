@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
 import { useHistory, useParams } from 'react-router-dom';
 import MainView from '../../components/MainView';
-import ContentPanel from '../../components/ContentPanel';
 
 import api from '../../services/api';
 import Swal from 'sweetalert2'; 
@@ -39,7 +38,7 @@ const SocialCallback = () => {
 				history.push('/tracks');
 			}
 		});
-	},[]);
+	});
 
 	return <MainView loading='Authenticating...' />
 }

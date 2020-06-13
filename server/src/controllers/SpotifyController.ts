@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import Cache from '../classes/Cache';
-import Compare from '../classes/Compare'; 
 import axios from 'axios';
+import Compare from '../classes/Compare'; 
 import { TrackListData, TrackData, MergedData } from '../types';
 
 const client_id = process.env.SPOTIFY_CLIENTID;
@@ -56,11 +56,12 @@ class SP {
 	}
 
 	static parse(track: any) : TrackData {
-		const data = {
+		const data: TrackData = {
 			id: track.id,
 			title: track.name,
 			artist: track.artists[0].name,
-			album: track.album.name
+			album: track.album.name,
+			image_url: track.album.images.find(image => image.width <= 300).url
 		};
 		return SP.addc(data);
 	}
@@ -121,14 +122,14 @@ class SpotifyController {
 				const resultlist = result?.data?.items;
 				if (!resultlist) {
 					await SP.logout(request);
-					return resolve({status:false});
+					return resolve({status:false, logout:true});
 				}
 				const tracks = resultlist.map((item:any) => SP.parse(item.track));
 				const next = result?.data?.next;
 				return resolve({status:true, next, tracks});
 			}).catch(async result => {
 				await SP.logout(request);
-				return resolve({status:false});
+				return resolve({status:false, logout:true});
 			});
 		});	
 
@@ -137,7 +138,7 @@ class SpotifyController {
 	async findTrack(request: Request, response: Response) {
 		const track = request.body as MergedData;
 		const data = Compare.getData(track);
-		
+
 		const q = ['track:'+data.title,'album:'+data.album,'artist:'+data.artist];
 
 		SP.get(request, '/search?q='+encodeURIComponent(q.join(' '))+'&type=track',true).then(result => {
@@ -164,7 +165,8 @@ class SpotifyController {
 				response.json({status:false, error:'failed_to_add', feed});
 			})
 		}).catch(feed => {
-			response.json({status:false, error:'failed_to_search', feed});
+			SP.logout(request);
+			response.json({status:false, error:'failed_to_search', logout:true, feed});
 		})	
 	}
 }

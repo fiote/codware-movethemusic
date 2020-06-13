@@ -1,5 +1,4 @@
-import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import React from 'react';
 import ContentPanel from '../../components/ContentPanel';
 import MainView from '../../components/MainView';
 
