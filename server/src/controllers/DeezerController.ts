@@ -209,7 +209,7 @@ class DeezerController {
 
 	async logout(request: Request, response: Response) {
 		await DZ.logout(request);		
-		response.join({status:true});
+		response.json({status:true});
 	}
 }
 

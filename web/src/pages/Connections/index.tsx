@@ -1,14 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import MainView from '../../components/MainView';
-import ContentPanel from '../../components/ContentPanel';
-import ContentTitle from '../../components/ContentTitle';
 
 import './index.scss';
 
 import api from '../../services/api';
-
-import imgDeezer from '../../images/deezer.png';
-import imgSpotify from '../../images/spotify.png';
 
 interface Profile {
 	deezer: {
@@ -36,12 +31,18 @@ interface SocialCardProps {
 
 const SocialCard = (props: SocialCardProps) => {
 	const platform = props.name.toLowerCase();
-	const login = props.login;
 	const image = require('../../images/'+platform.toLowerCase()+'.png');
 	
 	const [busy,setBusy] = useState<boolean>(false);
-	// const [login,setLogin] = useState<LoginData>();
 	
+	function handleClickConnect() {		
+		if (!props?.login?.authUrl) return;
+		setBusy(true);
+		localStorage.setItem('redirect-after-login',window.location.pathname);
+		window.location.href = props.login.authUrl;
+
+	}
+
 	function handleClickDisconnect() {
 		setBusy(true);
 		props.clickHandler(platform);
@@ -51,7 +52,7 @@ const SocialCard = (props: SocialCardProps) => {
 	return (
 		<div className='card'>
 			<div className='content'>
-				<img className='right floated mini ui image' src={image} />
+				<img className='right floated mini ui image' src={image} alt={props.name} />
 				<div className='header'>
 					{props.name}
 				</div>
@@ -59,14 +60,14 @@ const SocialCard = (props: SocialCardProps) => {
 					{props.login ? (props.login.logged ? 'Online' : 'Offline') : 'Checking...'}
 				</div>
 				<div className='description'>
-					{props.perms.map(text => <div>{text}</div>)}
+					{props.perms.map(text => <div key={text}>{text}</div>)}
 				</div>
 			</div>
 			<div className='extra content right aligned'>				
 				{props?.login?.logged ? (
 					<button className='ui inverted red button' disabled={busy} onClick={handleClickDisconnect} >Disconnect</button>
 				) : (
-					<a className='ui inverted green button' href={props.login?.authUrl || '#'} >Connect</a>
+					<button className='ui inverted green button' disabled={busy} onClick={handleClickConnect} >Connect</button>
 				)}
 			</div>
 		</div>
@@ -92,7 +93,7 @@ const Connections = () => {
 	useEffect(getProfile,[]);
 
 	return (
-		<MainView guest={true}>
+		<MainView guest={true} profile={profile}>
 			<div className='ui cards'>
 				<SocialCard name='Deezer' login={profile?.deezer} clickHandler={handleClickDisconnect} perms={['Basic-Access','Manage-Library']} />
 				<SocialCard name='Spotify' login={profile?.spotify} clickHandler={handleClickDisconnect} perms={['User-Library-Read','User-Library-Manage']} />

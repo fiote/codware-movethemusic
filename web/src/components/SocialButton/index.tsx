@@ -13,19 +13,9 @@ const SocialButton = (props: SocialButtonProps) => {
 	const btnIcon = require('../../images/'+props.platform.toLowerCase()+'.png');
 	const btnClass = ['platform',props?.data?.logged ? 'logged' : ''].join(' ');
 
-	/*
-	if (props.data) {
-		if (props.data.logged) {
-			return <a className="ui active green button" href={props.data.authUrl} >Connected to {props.platform}</a>;
-		}		
-		// return <a className="ui active button" href={props.data.authUrl} >Connect to {props.platform}</a>;
-	} 
-	return <a className="ui active button disabled">Cheching {props.platform} data...</a>;
-	*/
-
 	function handleClickPlatform() {
-		const authUrl = props.data.authUrl;
-		window.location.href = authUrl;
+		localStorage.setItem('redirect-after-login',window.location.pathname);
+		window.location.href = props.data.authUrl;
 	}
 	
 	return (

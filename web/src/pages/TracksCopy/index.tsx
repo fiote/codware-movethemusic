@@ -23,41 +23,40 @@ const TracksCopy = (props: TracksCopyProps) => {
 	const history = useHistory();
 	
 	const [tracklist,setTracklist] = useState<any[]>();
-	const [prProgress,setPrProgress] = useState<number>(0);
 	const [qtDone,setQtDone] = useState<number>(0);
 	const [qtSuccess,setQtSuccess] = useState<number>(0);
 	const [qtFailed,setQtFailed] = useState<number>(0);
 	const [qtTotal,setQtTotal] = useState<number>(0);
-	const [allDone,setAllDone] = useState<boolean>(true)
 	const [currentTrack,setCurrentTrack] = useState<any>();
 	
 	const { source, target, tracks } = props.location.state;
 
-	function execLogout() {
-		Swal.fire({title:'Ops!', html:'Looks like your '+target.toUpperCase()+' session expired. Please log in again and retry this!',icon:'warning'}).then(ev => {
-			history.push('/tracks');
-		});
-	}
-
 	useEffect(() => {
 		function goNext() {
-			setQtDone(qtDone+1);
-			var newlist = Array.from(tracklist || []);
-			newlist.shift();
-			setTracklist(newlist);
+			setQtDone(q => q+1);
+			
+			setTracklist(t => {
+				var newlist = Array.from(t || []);
+				newlist.shift();
+				return newlist;
+			});
+		}
+
+		function execLogout() {
+			Swal.fire({title:'Ops!', html:'Looks like your '+target.toUpperCase()+' session expired. Please log in again and retry this!',icon:'warning'}).then(ev => {
+				history.push('/tracks');
+			});
 		}
 
 		api.post('/'+target+'/findtrack',currentTrack).then(response => {
 			const feed = response.data;
-			console.log(feed);
-			feed.status ? setQtSuccess(qtSuccess+1) : setQtFailed(qtFailed+1);
+			feed.status ? setQtSuccess(q => q+1) : setQtFailed(q => q+1);
 			feed.logout ? execLogout() : goNext();
 		}).catch(feed => {
-			setQtFailed(qtFailed+1);
+			setQtFailed(q => q+1);
 			console.error(feed);
-			// goNext();
 		});
-	},[currentTrack]);
+	},[currentTrack,target,history]);
 
 	useEffect(() => {	
 		if (!tracklist) return;

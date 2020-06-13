@@ -29,18 +29,19 @@ const SocialCallback = () => {
 	const value = String(params.get(field));
 
 	useEffect(() => {
+		const redirect = localStorage.getItem('redirect-after-login') || '/tracks';
 		api.get<Authcode>('/'+plaform+'/authcode?'+field+'='+value).then(async feed => {
 			if (feed.data.status) {
-				await Swal.fire({title:'Nice!', html:'We\'re now connected to your '+plaform.toUpperCase()+' account.' ,icon:'success'});
-				history.push('/tracks');
+				// await Swal.fire({title:'Nice!', html:'We\'re now connected to your '+plaform.toUpperCase()+' account.' ,icon:'success'});
+				history.push(redirect);
 			} else {
 				await Swal.fire({title:'Ops!', html:feed.data.error, icon:'error'});
-				history.push('/tracks');
+				history.push(redirect);
 			}
 		});
 	});
 
-	return <MainView loading='Authenticating...' />
+	return <MainView loading='Authenticating...' guest={true} />
 }
 
 export default SocialCallback;

@@ -172,7 +172,7 @@ class SpotifyController {
 
 	async logout(request: Request, response: Response) {
 		await SP.logout(request);		
-		response.join({status:true});
+		response.json({status:true});
 	}
 }
 

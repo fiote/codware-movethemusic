@@ -21,6 +21,7 @@ interface Profile {
 
 interface MainViewProps { 
 	sidemenu?: boolean,
+	profile?: Profile,
 	title?: React.ReactNode,
 	loading?: string | null,
 	guest?: boolean | null,
@@ -33,12 +34,16 @@ const MainView = (props: MainViewProps) => {
 	const [profile,setProfile] = useState<Profile>();
 
 	function getProfile() {
+		if (props.profile) {
+			setProfile(props.profile);
+			return;
+		}
 		api.get<Profile>('/profile').then(feed => {
 			setProfile(feed.data);
 		});
 	}
 
-	useEffect(getProfile,[]);
+	useEffect(getProfile,[props.profile]);
 
 	let params = {...props};
 	let sidemenu = null;
