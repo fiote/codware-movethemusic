@@ -26,6 +26,7 @@
 	background: #F3F3F3;
 	color: $textcolor;
 	padding: 10px;
+	position: relative;
 	font-weight: bold;
 
 	.menu {
@@ -46,6 +47,12 @@
 		hr {
 			opacity: 0.1;
 			width: 90%;
+		}
+
+		.bottom-menu {
+			position: absolute;
+			width: 90%;
+			bottom: 5px;
 		}
 	}
 }

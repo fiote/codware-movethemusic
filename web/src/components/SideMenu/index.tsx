@@ -17,6 +17,12 @@ const SideMenu = (props: any) => {
 			<Link to="/connections" className="link">
 				<i className="wifi icon"></i> <label>Connections</label>
 			</Link>
+			<div className="bottom-menu">
+				<hr/>
+				<Link to="/credits" className="link">
+					<i className="user friends icon"></i> <label>Credits</label>
+				</Link>
+			</div>
 		</div>
 	)
 }

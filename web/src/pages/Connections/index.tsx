@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import MainView from '../../components/MainView';
+import ContentTitle from '../../components/ContentTitle';
 
 import './index.scss';
 
@@ -92,8 +93,12 @@ const Connections = () => {
 	
 	useEffect(getProfile,[]);
 
+	const title = (
+		<ContentTitle>Connections</ContentTitle>
+	)
+
 	return (
-		<MainView guest={true} profile={profile}>
+		<MainView guest={true} title={title} profile={profile}>
 			<div className='ui cards'>
 				<SocialCard name='Deezer' login={profile?.deezer} clickHandler={handleClickDisconnect} perms={['Basic-Access','Manage-Library']} />
 				<SocialCard name='Spotify' login={profile?.spotify} clickHandler={handleClickDisconnect} perms={['User-Library-Read','User-Library-Manage','User-Follow-Read','User-Follow-Modify']} />
