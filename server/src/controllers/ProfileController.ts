@@ -29,10 +29,10 @@ class ProfileController {
 	}
 
 	async albumlist(request: Request, response: Response) {	
-		const sp = Cache.sessionGet(request,'spotify-artists-list') || [];
-		const dz = Cache.sessionGet(request,'deezer-artists-list') || [];
-		// const tracks = Compare.mergeLists('deezer', dztracks || [], 'spotify', sptracks || []);
-	 	response.json({status: (sp || dz) ? true : false, sp, dz});
+		const dz = DeezerController.getAlbums(request);
+		const sp =  SpotifyController.getAlbums(request);
+		const albums = Compare.mergeAlbums('deezer', dz, 'spotify', sp);
+	 	response.json({status: (sp || dz) ? true : false, list: albums});
 	}
 }
 

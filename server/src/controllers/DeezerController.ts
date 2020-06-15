@@ -37,6 +37,9 @@ class DZ {
 		if (type == 'artists') {
 			return '/user/me/artists&limit='+options.ilimit+'&index='+options.ioffset;
 		}
+		if (type == 'albums') {
+			return '/user/me/albums&limit='+options.ilimit+'&index='+options.ioffset;
+		}
 	}
 
 	async static logout(request: Request) {
@@ -49,7 +52,10 @@ class DZ {
 	static get(request: Request, endpoint: string, authed: boolean) {
 		if (!endpoint.includes('http')) {
 			if (endpoint.indexOf('?') < 0) endpoint += '?foo';
-			if (authed) endpoint += '&' + DZ.data(request).auth;
+			if (authed) {
+				const data = DZ.data(request);
+				if (data) endpoint += '&' + data.auth;
+			}
 			endpoint = 'https://api.deezer.com'+endpoint;
 		}
 		return axios.get(endpoint);
@@ -76,6 +82,9 @@ class DZ {
 		if (type == 'tracks') {
 			return data.data;
 		}
+		if (type == 'albums') {
+			return data.data;
+		}
 		if (type == 'artists') {
 			return data.data;
 		}
@@ -83,6 +92,13 @@ class DZ {
 
 	static parsePage(type:string, data:any) {
 		if (type == 'tracks') {
+			return {
+				entries: data.data,
+				next: data.next,
+				total: data.total
+			}
+		}
+		if (type == 'albums') {
 			return {
 				entries: data.data,
 				next: data.next,
@@ -103,14 +119,23 @@ class DZ {
 			const data:TrackData = {
 				id: entry.id,
 				title: entry.title,
-				artist: entry.artist.name,
 				album: entry.album.title,
+				artist: entry.artist.name,
 				image_url: entry.album.cover_medium,
 				ctitle: '', cartist: '', calbum:''
 			};			
 			return DZ.addc(data);
-		}
-		
+		}	
+		if (type == 'albums') {
+			const data = {
+				id: entry.id,
+				album: entry.title,
+				artist: entry.artist.name,
+				image_url: entry.cover_medium,
+				ctitle: '', cartist: '', calbum:''
+			}
+			return DZ.addc(data);
+		}	
 		if (type == 'artists') {
 			const data = {
 				id: entry.id,
@@ -203,11 +228,25 @@ class DeezerController {
 		pager.loadEntities(request, response, 'tracks');
 	}
 
-	async findTrack(request: Request, response: Response) {
-		const track = request.body as MergedTrack;
-		const data = Compare.getDataTrack(track);
+	static getTracks(request: Request) {
+		return Cache.sessionGet(request,'deezer-tracks-list') || [];
+	}
 
-		const q = [data.title,data.artist,data.album]; // ,'album:'+data.album,'artist:'+data.artist];
+	async static setTracks(request: Request, fulllist:any[]) {
+		await Cache.sessionSet(request,'deezer-tracks-list',fulllist);
+	}
+
+	async static pushTrack(request: Request, newentry: any) {
+		const fulllist = DeezerController.getTracks(request);
+		fulllist.push(newentry);
+		await DeezerController.setTracks(request,fulllist);
+	}
+
+	async findTrack(request: Request, response: Response) {
+		const body = request.body;
+		const data = Compare.getDataTrack(body);
+
+		const q = [data.title,data.artist,data.album]; 
 
 		DZ.get(request, '/search/track?q='+encodeURIComponent(q.join(' ')),true).then(async result => {
 			const resultlist = result?.data?.data;
@@ -215,14 +254,14 @@ class DeezerController {
 				await DZ.logout(request);
 				return resolve({status:false, logout:true});
 			}
-			const tracklist = resultlist.map(item => DZ.parse(item));
-			const match = Compare.matchTrackInList(track, tracklist);
+			const parsedlist = resultlist.map(item => DZ.parseEntity('tracks',item));		
 			
-			if (!match) return response.json({status:false, error:'no_match', data, tracklist});
-			const track_id = match.track.id;
+			const match = Compare.matchTrackInList(body, parsedlist);
+			if (!match) return response.json({status:false, error:'no_match', data, parsedlist});
+			const track_id = match.found.id;
 
 			DZ.post(request, '/user/me/tracks?track_id='+track_id, true).then(async feed => {
-				const {title, artist, album} = track;
+				const {title, artist, album} = body;
 				const newentry = DZ.new({id: track_id, title, artist, album});
 				await DeezerController.pushTrack(request,newentry);
 				response.json({status:true, newentry});
@@ -230,23 +269,63 @@ class DeezerController {
 				response.json({status:false, error:'failed_to_add', feed});
 			})
 		}).catch(async feed => {
-			await DZ.logout(request);
-			response.json({status:false, error:'failed_to_search', feed});
+			// await DZ.logout(request);
+			response.json({status:false, error:'failed_to_search', logout:false, feed});
 		});
 	}
 
-	static getTracks(request: Request) {
-		return Cache.sessionGet(request,'deezer-tracks-list') || [];
+	// ============= ALBUMS ==============================================================
+
+	async loadAlbums(request: Request, response: Response) {
+		pager.loadEntities(request, response, 'albums');
 	}
 
-	async static setTracks(request: Request, fulllist:any[]) {		
-		await Cache.sessionSet(request,'deezer-tracks-list',fulllist);
+	static getAlbums(request: Request) {
+		return pager.get(request, 'albums');
 	}
 
-	async static pushTrack(request: Request, newentry: any) {		
-		const fulllist = DeezerController.getTracks(request);
-		fulllist.push(newentry);
-		await DeezerController.setTracks(request,fulllist);
+	async static setAlbums(request: Request, fulllist:any[]) {
+		await pager.set(request, 'albums', fulllist);
+	}
+
+	async static pushAlbum(request: Request, newentry: any) {
+		await pager.push(request, 'albums', newentry);
+	}
+	
+	async findAlbum(request: Request, response: Response) {
+		const body = request.body;
+		const data = Compare.getDataAlbum(body);
+		const q = ['album:"'+data.album+'"'];
+	
+		DZ.get(request, '/search?q='+encodeURIComponent(q.join(' ')),true).then(result => {
+			const resultlist = result?.data?.data;
+			if (!resultlist) return response.json({status:false, q, error:'no_resultlist', result});
+			
+			const parsedlist = resultlist.map(item => DZ.parseEntity('albums',{...item.album, artist:item.artist}));
+			
+			const uniquelist = [];
+			parsedlist.forEach(entry => {
+				if (uniquelist.find(other => other.id == entry.id)) return;
+				uniquelist.push(entry);
+			});
+
+			const match = Compare.matchAlbumInList(body, uniquelist);
+			if (!match) return response.json({status:false, error:'no_match', data, uniquelist});
+
+			const found_id = match.found.id;
+
+			DZ.post(request, '/user/me/albums?album_id='+found_id, true).then(async feed => {
+				const { artist } = body;
+				const newentry = DZ.new({id:found_id, album, artist});	
+				await DeezerController.pushAlbum(request,newentry);
+				response.json({status:true, newentry});
+			}).catch(feed => {
+				response.json({status:false, error:'failed_to_add', feed});
+			})
+		}).catch(async feed => {
+			await DZ.logout(request);
+			response.json({status:false, error:'failed_to_search', logout:true, feed});
+		});
 	}
 	
 	// ============= ARTISTS =============================================================
@@ -255,9 +334,23 @@ class DeezerController {
 		pager.loadEntities(request, response, 'artists');
 	}
 
+	static getArtists(request: Request) {
+		return Cache.sessionGet(request,'deezer-artists-list') || [];
+	}
+
+	async static setArtists(request: Request, fulllist:any[]) {
+		await Cache.sessionSet(request,'deezer-artists-list',fulllist);
+	}
+
+	async static pushArtist(request: Request, newentry: any) {
+		const fulllist = DeezerController.getArtists(request);
+		fulllist.push(newentry);
+		await DeezerController.setArtists(request, fulllist);
+	}
+
 	async findArtist(request: Request, response: Response) {
-		const body = request.body as MergedArtist;
-		const data = Compare.getDataArtist(body);		
+		const body = request.body;
+		const data = Compare.getDataArtist(body);
 		const q = ['artist:"'+data.artist+'"'];
 	
 		DZ.get(request, '/search?q='+encodeURIComponent(q.join(' ')),true).then(result => {
@@ -272,38 +365,25 @@ class DeezerController {
 				uniquelist.push(entry);
 			});
 
-			const match = Compare.matchArtistInList(body, uniquelist);			
+			const match = Compare.matchArtistInList(body, uniquelist);
 			if (!match) return response.json({status:false, error:'no_match', data, uniquelist});
 
 			const found_id = match.found.id;
 
-			DZ.post(request, '/user/me/artists/&artist_id='+found_id, true).then(async feed => {
+			DZ.post(request, '/user/me/artists?artist_id='+found_id, true).then(async feed => {
 				const { artist } = body;
 				const newentry = DZ.new({id:found_id, artist});	
-				await DeezerController.pushTrack(request,newentry);
+				await DeezerController.pushArtist(request,newentry);
 				response.json({status:true, newentry});
 			}).catch(feed => {
 				response.json({status:false, error:'failed_to_add', feed});
 			})
 		}).catch(async feed => {
 			await DZ.logout(request);
-			response.json({status:false, error:'failed_to_search', feed});
+			response.json({status:false, error:'failed_to_search', logout:true, feed});
 		});
 	}
-
-	static getArtists(request: Request) {
-		return Cache.sessionGet(request,'deezer-artists-list') || [];
-	}
-
-	async static setArtists(request: Request, fulllist:any[]) {		
-		await Cache.sessionSet(request,'deezer-artists-list',fulllist);
-	}
-
-	async static pushArtist(request: Request, newentry: any) {		
-		const fulllist = DeezerController.getArtists(request);
-		fulllist.push(newentry);
-		await DeezerController.setArtists(request, fulllist);
-	}
+	
 }
 
 export default DeezerController;

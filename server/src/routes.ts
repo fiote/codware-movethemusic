@@ -16,15 +16,19 @@ routes.get('/artistslist',profileController.artistlist);
 
 routes.get('/deezer/authcode',deezerController.checkCode);
 routes.get('/deezer/tracks/:page?/:lastid?',deezerController.loadTracks);
+routes.get('/deezer/albums/:page?/:lastid?',deezerController.loadAlbums);
 routes.get('/deezer/artists/:page?/:lastid?',deezerController.loadArtists);
 routes.post('/deezer/find/tracks',deezerController.findTrack);
+routes.post('/deezer/find/albums',deezerController.findAlbum);
 routes.post('/deezer/find/artists',deezerController.findArtist);
 routes.post('/deezer/logout',deezerController.logout);
 
 routes.get('/spotify/authcode',spotifyController.checkCode);
 routes.get('/spotify/tracks/:page?/:lastid?',spotifyController.loadTracks);
+routes.get('/spotify/albums/:page?/:lastid?',spotifyController.loadAlbums); 
 routes.get('/spotify/artists/:page?/:lastid?',spotifyController.loadArtists); 
 routes.post('/spotify/find/tracks',spotifyController.findTrack);
+routes.post('/spotify/find/albums',spotifyController.findAlbum);
 routes.post('/spotify/find/artists',spotifyController.findArtist);
 routes.post('/spotify/logout',spotifyController.logout);
 

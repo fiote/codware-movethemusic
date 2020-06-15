@@ -7,7 +7,8 @@ import imgSong from '../../images/song.png';
 const Albums = () => {
 
 	const fields = {
-		album: 'Album'
+		album: 'Album',
+		artist: 'Artist',
 	}
 
 	return (

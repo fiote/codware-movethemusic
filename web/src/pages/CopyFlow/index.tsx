@@ -33,6 +33,7 @@ const CopyFlow = (props: CopyFlowProps) => {
 	const { source, target, items } = props.location.state;
 
 	useEffect(() => {
+		if (!currentItem) return;
 		function goNext() {
 			setQtDone(q => q+1);
 			
@@ -97,6 +98,15 @@ const CopyFlow = (props: CopyFlowProps) => {
 		content = (
 			<>
 				<div className="copy-title">{currentItem.title}</div>
+				<div className="copy-details">{currentItem.artist}</div>
+			</>
+		)
+	}
+
+	if (mergetype == 'albums') {
+		content = (
+			<>
+				<div className="copy-title">{currentItem.album}</div>
 				<div className="copy-details">{currentItem.artist}</div>
 			</>
 		)

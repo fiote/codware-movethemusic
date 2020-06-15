@@ -12,9 +12,6 @@ class Pager {
 		const keylist = this.platform+'-'+type+'-list';
 		if (!data) return response.json({status:false, error:'no_session_data'});
 
-		console.log('LOAD ENTITITES');
-		console.log(request.params);
-
 		const ipage = Number(request.params.page) || 1;
 		const slast = request.params.lastid || '';
 		const list = Cache.sessionGet(request,keylist) || [];
@@ -58,6 +55,20 @@ class Pager {
 				return resolve({status:false, error:'catch', details:result, logout:true});
 			});
 		});	
+	}
+
+	get(request: Request, type: string) {
+		return Cache.sessionGet(request,this.platform+'-'+type+'-list') || [];
+	}
+
+	async set(request: Request, type: string, fulllist: any[]) {
+		await Cache.sessionSet(request,this.platform+'-'+type+'-list',fulllist);		
+	}
+
+	async push(request: Request, type: string, newentry: any) {
+		const fulllist = this.get(request, type);
+		fulllist.push(newentry);
+		await this.set(request, type, fulllist);
 	}
 }
 

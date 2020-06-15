@@ -23,12 +23,16 @@ class SP {
 		if (type == 'artists') {
 			return '/me/following?type=artist'+(options.lastid ? ('&after='+options.lastid) : '');
 		}
+		if (type == 'albums') {
+			return '/me/albums?limit='+options.ilimit+'&offset='+options.ioffset;
+		}
 	}
 
 	async static logout(request: Request) {
 		await Cache.remove('spotifyData',request);	
 		await Cache.remove('spotify-tracks-list',request);
 		await Cache.remove('spotify-artists-list',request);
+		await Cache.remove('spotify-albums-list',request);
 	}
 
 	static headers(request: Request) {
@@ -70,6 +74,9 @@ class SP {
 		if (type == 'tracks') {
 			return data.items;
 		}
+		if (type == 'albums') {
+			return data.items;
+		}
 		if (type == 'artists') {
 			return data.items;
 		}
@@ -77,6 +84,13 @@ class SP {
 
 	static parsePage(type:string, data:any) {
 		if (type == 'tracks') {
+			return {
+				entries: data.items,
+				next: data.next,
+				total: data.total
+			}
+		}
+		if (type == 'albums') {
 			return {
 				entries: data.items,
 				next: data.next,
@@ -101,6 +115,16 @@ class SP {
 				artist: entry.artists[0].name,
 				album: entry.album.name,
 				image_url: entry.album.images.find(image => image.width <= 400)?.url
+			};
+			return SP.addc(data);
+		}
+		if (type == 'albums') {
+			if (entry.album) entry = entry.album;
+			const data = {
+				id: entry.id,
+				artist: entry.artists[0].name,
+				album: entry.name,
+				image_url: entry.images.find(image => image.width <= 400)?.url
 			};
 			return SP.addc(data);
 		}
@@ -155,9 +179,21 @@ class SpotifyController {
 	async loadTracks(request: Request, response: Response) {
 		pager.loadEntities(request, response, 'tracks');
 	}
+
+	static getTracks(request: Request) {
+		return pager.get(request, 'tracks');
+	}
+
+	async static setTracks(request: Request, fulllist:any[]) {		
+		await pager.set(request, 'tracks', fulllist);
+	}
+
+	async static pushTrack(request: Request, newentry: any) {		
+		await pager.push(request, 'tracks', newentry);
+	}
 	
 	async findTrack(request: Request, response: Response) {
-		const body = request.body as MergedTrack;
+		const body = request.body;
 		const data = Compare.getDataTrack(body);
 		const q = ['track:'+data.title,'album:'+data.album,'artist:'+data.artist];
 
@@ -167,7 +203,7 @@ class SpotifyController {
 
 			const parsedlist = resultlist.items.map(item => SP.parseEntity('tracks',item));
 			const match = Compare.matchTrackInList(body, parsedlist);			
-			if (!match) return response.json({status:false, error:'no_match', data, parsedlist});
+			if (!match) return response.json({status:false, error:'no_match', q, data, parsedlist});
 			const found_id = match.found.id;
 
 			SP.put(request, '/me/tracks?ids='+found_id).then(async feed => {
@@ -183,19 +219,52 @@ class SpotifyController {
 			response.json({status:false, error:'failed_to_search', logout:true, feed});
 		})	
 	}
+	
+	// ============= ALBUMS ==============================================================
 
-	static getTracks(request: Request) {
-		return Cache.sessionGet(request,'spotify-tracks-list') || [];
+	async loadAlbums(request: Request, response: Response) {
+		pager.loadEntities(request, response, 'albums');
 	}
 
-	async static setTracks(request: Request, fulllist:any[]) {		
-		await Cache.sessionSet(request,'spotify-tracks-list',fulllist);
+	static getAlbums(request: Request) {
+		return pager.get(request, 'albums');
 	}
 
-	async static pushTrack(request: Request, newentry: any) {		
-		const fulllist = SpotifyController.getTracks(request);
-		fulllist.push(newentry);
-		await SpotifyController.setTracks(request,fulllist);
+	async static setAlbums(request: Request, fulllist:any[]) {		
+		await pager.set(request, 'albums', fulllist);
+	}
+
+	async static pushAlbum(request: Request, newentry: any) {
+		await pager.push(request, 'albums', newentry);
+	}
+
+	async findAlbum(request: Request, response: Response) {
+		const body = request.body;
+		const data = Compare.getDataAlbum(body);
+		const q = ['album:'+data.album,'artist:'+data.artist];
+
+		SP.get(request, '/search?q='+encodeURIComponent(q.join(' '))+'&type=album',true).then(result => {
+			const resultlist = result?.data?.albums;
+			if (!resultlist) return response.json({status:false, q, error:'no_resultlist', result});
+
+			const parsedlist = resultlist.items.map(item => SP.parseEntity('albums',item));
+			
+			const match = Compare.matchAlbumInList(body, parsedlist);			
+			if (!match) return response.json({status:false, error:'no_match', data, parsedlist});
+			const found_id = match.found.id;
+			
+			SP.put(request, '/me/albums?ids='+found_id).then(async feed => {
+				const {artist, album} = body;
+				const newentry = SP.new({id: found_id, artist, album});
+				await SpotifyController.pushAlbum(request, newentry);
+				response.json({status:true, newentry});
+			}).catch(feed => {
+				response.json({status:false, error:'failed_to_add', feed});
+			})
+		}).catch(async feed => {
+			await SP.logout(request);
+			response.json({status:false, error:'failed_to_search', logout:true, feed});
+		})	
 	}
 	
 	// ============= ARTISTS =============================================================
@@ -204,12 +273,22 @@ class SpotifyController {
 		pager.loadEntities(request, response, 'artists');
 	}
 
+	static getArtists(request: Request) {
+		return pager.get(request, 'artists');
+	}
+
+	async static setArtists(request: Request, fulllist:any[]) {		
+		await pager.set(request, 'artists', fulllist);
+	}
+
+	async static pushArtist(request: Request, newentry: any) {		
+		await pager.push(request, 'artists', newentry);
+	}
+
 	async findArtist(request: Request, response: Response) {
 		const body = request.body as MergedArtist;
 		const data = Compare.getDataArtist(body);		
 		const q = [data.artist];
-		console.log(q);
-
 		
 		SP.get(request, '/search?q='+encodeURIComponent(q.join(' '))+'&type=artist',true).then(result => {
 			const resultlist = result?.data?.artists;
@@ -233,20 +312,6 @@ class SpotifyController {
 			await SP.logout(request);
 			response.json({status:false, error:'failed_to_search', logout:true, feed});
 		});
-	}
-
-	static getArtists(request: Request) {
-		return Cache.sessionGet(request,'spotify-artists-list') || [];
-	}
-
-	async static setArtists(request: Request, fulllist:any[]) {		
-		await Cache.sessionSet(request,'spotify-artists-list',fulllist);
-	}
-
-	async static pushArtist(request: Request, newentry: any) {		
-		const fulllist = SpotifyController.getArtists(request);
-		fulllist.push(newentry);
-		await SpotifyController.setArtists(request, fulllist);
 	}
 }
 

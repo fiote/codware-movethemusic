@@ -51,14 +51,57 @@ class Compare {
 	// ============= BASE ================================================================
 
 	static clearValue(value: string, pristine: bool = false) {
+		if (!value) return value;
+
 		let clear = value;
 		clear = clear.replace(/\s*\(.*?\)\s*/g,'');
 		clear = clear.replace(/\s*\[.*?\]\s*/g,'');
-		clear = clear.split('and').join(' ');
-		clear = clear.split('of').join(' ');
 		if (pristine) clear = clear.replace(/[^a-z0-9 ]/gi,'');
 		clear = clear.replace(/\s+/g, " ");
 		return clear;
+	}
+
+	static getKeyword(value: string, clearFirst: bool) {
+		if (clearFirst) value = Compare.clearValue(value);
+		const parts = value.split(' ');
+		parts.sort((a,b) => a.length > b.length ? -1 : +1);
+		return parts[0];
+	}
+
+	static mergeThings(akey: string, alist: any[], bkey: string, blist: any[], merger: Function, matcher: Function) {
+		const merged = [];
+
+		alist = Array.from(alist);
+		blist = Array.from(blist);
+
+		const matched = [];
+		
+		while (alist.length) {
+			const atrack = alist.shift();
+			const entry = merger(akey, atrack);
+			const match = matcher(atrack, blist);
+			if (match) {
+				entry.mtype = match.mtype
+				entry.platforms[bkey] = match.found;
+				matched.push(match.found);
+				match.found.merged = true;
+			}
+			merged.push(entry);
+		}
+
+		while (matched.length) {
+			const track = matched.shift();
+			const index = blist.indexOf(track);
+			if (index >= 0) blist.splice(index,1);
+		}
+
+		while (blist.length) {
+			const btrack = blist.shift();
+			const entry = merger(bkey, btrack);
+			merged.push(entry);
+		}
+
+		return merged;
 	}
 
 	// ============= TRACKS ==============================================================
@@ -72,6 +115,7 @@ class Compare {
 		{removeExtra:true, ignoreAlbum:true},
 		{removeExtra:true, containsTitle:true},
 		{removeExtra:true, ignoreAlbum:true, containsTitle:true},
+		{removeExtra:true, ignoreAlbum:true, containsTitle:true, keyWords:true},
 	];
 
 	static mergeTracks(akey: string, alist: TrackData[], bkey: string, blist: TrackData[]) {
@@ -121,10 +165,15 @@ class Compare {
 		for (var matchType of Compare.matchTypesTracks) {
 			
 			const a = {title: atrack.ctitle, artist: atrack.cartist, album: atrack.calbum};
+
 			if (matchType.removeExtra) {
 				a.title = Compare.clearValue(a.title,true);
 				a.album = Compare.clearValue(a.album,true);
 				a.artist = Compare.clearValue(a.artist,true);
+			}
+
+			if (matchType.keyWords) {
+				a.artist = Compare.getKeyword(a.artist);
 			}
 
 			var similar = list.map(btrack => {
@@ -134,6 +183,10 @@ class Compare {
 					b.title = Compare.clearValue(b.title,true);
 					b.album = Compare.clearValue(b.album,true);
 					b.artist = Compare.clearValue(b.artist,true);
+				}
+
+				if (matchType.keyWords) {
+					b.artist = Compare.getKeyword(a.artist);
 				}
 
 				return {
@@ -150,17 +203,70 @@ class Compare {
 		}
 	}
 
-	static getDataTrack(track: any) {		
-		const albumparts = Compare.clearValue(track.calbum).split(' ');
-		albumparts.sort((a,b) => a.length > b.length ? -1 : +1);
-		
-		const artistparts = Compare.clearValue(track.cartist).split(' ');
-		artistparts.sort((a,b) => a.length > b.length ? -1 : +1);
-
+	static getDataTrack(track: any) {
 		return {
 			title: Compare.clearValue(track.ctitle),
-			album: albumparts[0],
-			artist: artistparts[0]
+			album: Compare.getKeyword(track.calbum,true),
+			artist: Compare.getKeyword(track.cartist,true)
+		}
+	}
+
+	// ============= ALBUMS ==============================================================
+
+	static matchTypesAlbums = [
+		{},
+		{removeExtra:true},
+	];
+	
+
+	static mergeAlbums(akey: string, alist: any[], bkey: string, blist: any[]) {
+		const merger = Compare.createMergeAlbum.bind(Compare);
+		const matcher = Compare.matchAlbumInList.bind(Compare);
+		return this.mergeThings(akey, alist, bkey, blist, merger, matcher);
+	}
+	
+	static createMergeAlbum(platform: string, data: any) {
+		const { id, album, calbum, artist, cartist, image_url } = data;
+		const entry = { id:platform+'-'+id, album, calbum, artist, cartist, image_url, platforms:{} };
+		entry.platforms[platform] = data;
+		return entry;
+	}
+
+	static matchAlbumInList(dataA: any, list: any[]) {
+		for (var matchType of Compare.matchTypesAlbums) {
+			
+			const a = { artist: dataA.cartist, album: dataA.calbum };
+
+			if (matchType.removeExtra) {
+				a.album = Compare.clearValue(a.album,true);
+				a.artist = Compare.clearValue(a.artist,true);
+			}
+
+			var similar = list.map(dataB => {
+				const b = {artist: dataB.cartist, album: dataB.calbum};	
+				
+				if (matchType.removeExtra) {
+					b.album = Compare.clearValue(b.album,true);
+					b.artist = Compare.clearValue(b.artist,true);
+				}
+
+				return {
+					artist: a.artist === b.artist,
+					album: a.album === b.album,
+					found: dataB,
+					mtype: matchType
+				};
+			}).filter(match => match.artist || match.album);
+
+			var match = similar.find(match => match.album && match.artist);
+			if (match) return {mtype:match.mtype, found:match.found};
+		}
+	}
+
+	static getDataAlbum(item: any) {
+		return {
+			album: Compare.clearValue(item.calbum,true),
+			artist: Compare.clearValue(item.cartist,true)
 		}
 	}
 
@@ -215,7 +321,6 @@ class Compare {
 	}
 
 	static matchArtistInList(dataA: ArtistData, list: ArtistData[]) : MatchArtist {
-		
 		for (var matchType of Compare.matchTypesTracks) {				
 			const a = {artist: dataA.cartist};
 			if (matchType.removeExtra) a.artist = Compare.clearValue(a.artist,true);

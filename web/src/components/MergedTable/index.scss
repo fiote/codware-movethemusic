@@ -73,6 +73,10 @@
 		grid-template-columns: auto 80px 80px;
 	}
 
+	&.cols-2 {
+		grid-template-columns: auto 40% 80px 80px;
+	}
+
 	&.cols-3 {
 		grid-template-columns: auto 22% 22% 80px 80px;
 	}
