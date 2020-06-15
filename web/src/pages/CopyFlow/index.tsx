@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useHistory, useParams } from 'react-router-dom';
 import MainView from '../../components/MainView';
 import ContentPanel from '../../components/ContentPanel';
 import ContentTitle from '../../components/ContentTitle';
@@ -9,33 +9,34 @@ import './index.scss';
 import api from '../../services/api';
 import Swal from 'sweetalert2'; 
 
-interface TracksCopyProps {
+interface CopyFlowProps {
 	location: {
 		state: {
 			source: string,
 			target: string,
-			tracks: any[]
+			items: any[]
 		}
 	}
 }
 
-const TracksCopy = (props: TracksCopyProps) => {
+const CopyFlow = (props: CopyFlowProps) => {
+  	let { mergetype } = useParams();	  
 	const history = useHistory();
 	
-	const [tracklist,setTracklist] = useState<any[]>();
+	const [copylist,setCopylist] = useState<any[]>();
 	const [qtDone,setQtDone] = useState<number>(0);
 	const [qtSuccess,setQtSuccess] = useState<number>(0);
 	const [qtFailed,setQtFailed] = useState<number>(0);
 	const [qtTotal,setQtTotal] = useState<number>(0);
-	const [currentTrack,setCurrentTrack] = useState<any>();
+	const [currentItem,setCurrentItem] = useState<any>();
 	
-	const { source, target, tracks } = props.location.state;
+	const { source, target, items } = props.location.state;
 
 	useEffect(() => {
 		function goNext() {
 			setQtDone(q => q+1);
 			
-			setTracklist(t => {
+			setCopylist(t => {
 				var newlist = Array.from(t || []);
 				newlist.shift();
 				return newlist;
@@ -44,63 +45,80 @@ const TracksCopy = (props: TracksCopyProps) => {
 
 		function execLogout() {
 			Swal.fire({title:'Ops!', html:'Looks like your '+target.toUpperCase()+' session expired. Please log in again and retry this!',icon:'warning'}).then(ev => {
-				history.push('/tracks');
+				history.push('/'+mergetype);
 			});
 		}
 
-		api.post('/'+target+'/findtrack',currentTrack).then(response => {
+		api.post('/'+target+'/find/'+mergetype,currentItem).then(response => {
 			const feed = response.data;
+			console.log(feed);
 			feed.status ? setQtSuccess(q => q+1) : setQtFailed(q => q+1);
 			feed.logout ? execLogout() : goNext();
 		}).catch(feed => {
 			setQtFailed(q => q+1);
 			console.error(feed);
 		});
-	},[currentTrack,target,history]);
+	},[currentItem,target,history]);
 
 	useEffect(() => {	
-		if (!tracklist) return;
-		let track = tracklist[0];
+		if (!copylist) return;
+		let track = copylist[0];
 		if (track) {
-			setCurrentTrack(track);
+			setCurrentItem(track);
 		} else {
 			const extra = qtFailed ? '<br/>(but we couldn\'t find a suitable match for <b>'+qtFailed+'</b> of them)' : '';
-			Swal.fire({title:'Done!', html:'We finished moving your '+source.toUpperCase()+' tracks to '+target.toUpperCase()+'.'+extra,icon:'success'}).then(ev => {
-				history.push('/tracks');
+			Swal.fire({title:'Done!', html:'We finished moving your '+source.toUpperCase()+' '+mergetype+' to '+target.toUpperCase()+'.'+extra,icon:'success'}).then(ev => {
+				history.push('/'+mergetype);
 			});
 		}
-	},[tracklist]);
+	},[copylist]);
 
 	useEffect(() => {
-		setQtTotal(tracks.length);
-		setTracklist(tracks);
+		setQtTotal(items.length);
+		setCopylist(items);
 	},[]);
 
 	const title = (
-		<ContentTitle>Copying tracks from {source.toUpperCase()} to {target.toUpperCase()}, please standby...</ContentTitle>
+		<ContentTitle>Moving {mergetype} from {source.toUpperCase()} to {target.toUpperCase()}, please standby...</ContentTitle>
 	)
 
-	if (!currentTrack) return <MainView title={title} loading='preparing list'/>;
+	if (!currentItem) return <MainView title={title} loading='preparing list'/>;
 
 	const ptext = (
 		<div>
-			Tracks moved: {qtSuccess}<br/>
-			No match found: {qtFailed}
+			{mergetype} moved: {qtSuccess}<br/>
+			no match found: {qtFailed}
 		</div>
 	)
+
+	let content = null;
+
+	if (mergetype == 'tracks') {
+		content = (
+			<>
+				<div className="copy-title">{currentItem.title}</div>
+				<div className="copy-details">{currentItem.artist}</div>
+			</>
+		)
+	}
+
+	if (mergetype == 'artists') {
+		content = (
+			<div className="copy-title">{currentItem.artist}</div>
+		)
+	}
 
 	return (
 		<MainView progressbar={qtTotal ? qtDone*100/qtTotal : 0} progresstext={ptext} title={title} >
 			<ContentPanel>
-				<div id="copy">
+				<div id="copy-box">
 					<div className="copy-number">{qtDone+1}/{qtTotal}</div>
-					<img className="copy-cover" src={currentTrack.image_url} />
-					<div className="copy-title">{currentTrack.title}</div>
-					<div className="copy-details">{currentTrack.artist}</div>
+					<img className="copy-cover" src={currentItem.image_url} />
+					{content}
 				</div>
 			</ContentPanel>
 		</MainView>
 	)
 }
 
-export default TracksCopy;
+export default CopyFlow;  

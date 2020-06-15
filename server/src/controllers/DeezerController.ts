@@ -2,7 +2,9 @@ import { Request, Response } from 'express';
 import Cache from '../classes/Cache';
 import axios from 'axios';
 import Compare from '../classes/Compare'; 
-import { TrackListData, TrackData, MergedData } from '../types';
+import Pager from '../classes/Pager'; 
+
+import { TrackListData, TrackData, MergedTrack } from '../types';
   
 const app_id = process.env.DEEZER_APPID;
 const secret_key = process.env.DEEZER_SECRETKEY;
@@ -27,15 +29,30 @@ class DZ {
 		return data as {auth: string, userId: string, playlistId: number};
 	}
 
+	static base(request:Request, type:string, options:any) {
+		if (type == 'tracks') {
+			const data = DZ.data(request);
+			return '/playlist/'+data.playlistId+'/tracks?limit='+options.ilimit+'&index='+options.ioffset;
+		}
+		if (type == 'artists') {
+			return '/user/me/artists&limit='+options.ilimit+'&index='+options.ioffset;
+		}
+	}
+
 	async static logout(request: Request) {
 		await Cache.remove('deezerData',request);	
 		await Cache.remove('deezerTracklist',request);	
+		await Cache.remove('deezer-tracks-list',request);	
+		await Cache.remove('deezer-artists-list',request);	
 	}
 
 	static get(request: Request, endpoint: string, authed: boolean) {
-		if (endpoint.indexOf('?') < 0) endpoint += '?foo';
-		if (authed) endpoint += '&' + DZ.data(request).auth;
-		return axios.get('https://api.deezer.com'+endpoint);
+		if (!endpoint.includes('http')) {
+			if (endpoint.indexOf('?') < 0) endpoint += '?foo';
+			if (authed) endpoint += '&' + DZ.data(request).auth;
+			endpoint = 'https://api.deezer.com'+endpoint;
+		}
+		return axios.get(endpoint);
 	}
 
 	static post(request: Request, endpoint: string, authed: boolean) {
@@ -44,66 +61,80 @@ class DZ {
 		return axios.post('https://api.deezer.com'+endpoint);
 	}
 
-	static new(id, title, artist, album) : TrackData {
-		const data = {id, title, artist, album};
+	static new(data) : TrackData {
 		return DZ.addc(data);
 	}
 
-	static addc(track: TrackData) : TrackData{
-		track.ctitle = track.title.replace(/\s*\(.*?\)\s*/g, "").toLowerCase();
-		track.cartist = track.artist.toLowerCase();
-		track.calbum = track.album.toLowerCase();
+	static addc(track: any) {
+		track.ctitle = track.title?.replace(/\s*\(.*?\)\s*/g, "").toLowerCase();
+		track.cartist = track.artist?.toLowerCase();
+		track.calbum = track.album?.toLowerCase();
 		return track;
 	}
 
-	static parse(track: DzTrackData) : TrackData {
-		const data : TrackData = {
-			id: track.id,
-			title: track.title,
-			artist: track.artist.name,
-			album: track.album.title,
-			image_url: track.album.cover_medium,
-			ctitle: '', cartist: '', calbum:''
-		};
-		return DZ.addc(data);
+	static getResultList(type:string, data:any) {
+		if (type == 'tracks') {
+			return data.data;
+		}
+		if (type == 'artists') {
+			return data.data;
+		}
+	}
+
+	static parsePage(type:string, data:any) {
+		if (type == 'tracks') {
+			return {
+				entries: data.data,
+				next: data.next,
+				total: data.total
+			}
+		}
+		if (type == 'artists') {
+			return {
+				entries: data.data,
+				next: data.next,
+				total: data.total
+			}
+		}
+	}
+
+	static parseEntity(type:string, entry:any) {
+		if (type == 'tracks') {
+			const data:TrackData = {
+				id: entry.id,
+				title: entry.title,
+				artist: entry.artist.name,
+				album: entry.album.title,
+				image_url: entry.album.cover_medium,
+				ctitle: '', cartist: '', calbum:''
+			};			
+			return DZ.addc(data);
+		}
+		
+		if (type == 'artists') {
+			const data = {
+				id: entry.id,
+				artist: entry.name,
+				image_url: entry.picture_medium
+			}
+			return DZ.addc(data);
+		}
 	}
 }
 
+const pager = new Pager('deezer', DZ, {
+	keylimit: 'limit',
+	keyoffset: 'index'
+});
+
+
 class DeezerController {
+
+	// ============= AUTH ================================================================
+
 	static getLogged(request: Request) {
 		const data = DZ.data(request);
 		return {logged: data?.auth ? true : false, authUrl};
-	}
-
-	static getTracklist(request: Request) {
-		return Cache.sessionGet(request,'deezerTracklist') || [];
-	}
-
-	static setTracklist(request: Request, tracks: any[]) {
-		return Cache.sessionSet(request,'deezerTracklist',tracks);
-	}
-	
-	static async getUserId(request: Request) {
-		return new Promise(resolve => {
-			DZ.get(request, '/user/me', true).then(result => {
-				resolve(result?.data?.id);
-			}).catch(result => {
-				resolve(null);
-			});
-		});
-	}
-	
-	static async getPlaylistId(request: Request) {
-		const deezerData = Cache.sessionGet(request, 'deezerData');
-
-		return new Promise(resolve => {
-			DZ.get(request, '/user/'+deezerData.userId+'/playlists', true).then(result => {
-				const playlistId = result?.data?.data?.find(playlist => playlist.is_loved_track)?.id;
-				resolve(playlistId);
-			}).catch(result => {
-				resolve(null);
-			});
-		});
 	}
 
 	async checkCode(request: Request, response: Response) {
@@ -136,53 +167,45 @@ class DeezerController {
 		response.json({status:true});
 	}
 
-	async loadTracks(request: Request, response: Response) {
-		const data = DZ.data(request);
-		if (!data) return response.json({status:false, error:'no_session_data'});
-
-		const ipage = Number(request.params.page) || 1;		
-		const tracks = DeezerController.getTracklist(request);
-		const pagedata = await DeezerController.getTracksPage(request, ipage);
-		
-		pagedata.tracks.forEach(track => {
-			var exists = tracks.find(saved => saved.id == track.id);
-			if (!exists) tracks.push(track);
-		});
-		
-		await DeezerController.setTracklist(request,tracks);
-
-		const loaded = tracks.length;
-		const total = pagedata.total;
-		const next = (loaded < total && pagedata.next) ? ipage+1 : null;
-		response.json({status:true, next, loaded, total, done:loaded >= total});
+	async logout(request: Request, response: Response) {
+		await DZ.logout(request);		
+		response.json({status:true});
 	}
 
-	async static getTracksPage(request: Request, ipage: number) {
-		const data = DZ.data(request);
-
-		const ilimit = 50;
-		let ioffset = (ipage-1)*ilimit;		
+	// ============= DATA ================================================================
+	
+	static async getUserId(request: Request) {
+		return new Promise(resolve => {
+			DZ.get(request, '/user/me', true).then(result => {
+				resolve(result?.data?.id);
+			}).catch(result => {
+				resolve(null);
+			});
+		});
+	}
+	
+	static async getPlaylistId(request: Request) {
+		const deezerData = Cache.sessionGet(request, 'deezerData');
 
 		return new Promise(resolve => {
-			DZ.get(request, '/playlist/'+data.playlistId+'/tracks?limit='+ilimit+'&index='+ioffset, true).then(async result => {
-				const resultlist = result?.data?.data;
-				if (!resultlist) {
-					await DZ.logout(request);
-					return resolve({status:false, logout:true});
-				}
-				const tracks = resultlist.map(item => DZ.parse(item));
-				const next = result?.data?.next;
-				return resolve({status:true, next, tracks, total: result.data.total});
-			}).catch(async result => {
-				await DZ.logout(request);
-				return resolve({status:false, error:'catch', logout:true});
+			DZ.get(request, '/user/'+deezerData.userId+'/playlists', true).then(result => {
+				const playlistId = result?.data?.data?.find(playlist => playlist.is_loved_track)?.id;
+				resolve(playlistId);
+			}).catch(result => {
+				resolve(null);
 			});
-		});	
+		});
+	}
+
+	// ============= TRACKS ==============================================================
+
+	async loadTracks(request: Request, response: Response) {
+		pager.loadEntities(request, response, 'tracks');
 	}
 
 	async findTrack(request: Request, response: Response) {
-		const track = request.body as MergedData;
-		const data = Compare.getData(track);
+		const track = request.body as MergedTrack;
+		const data = Compare.getDataTrack(track);
 
 		const q = [data.title,data.artist,data.album]; // ,'album:'+data.album,'artist:'+data.artist];
 
@@ -193,29 +216,93 @@ class DeezerController {
 				return resolve({status:false, logout:true});
 			}
 			const tracklist = resultlist.map(item => DZ.parse(item));
-			const match = Compare.matchInList(track, tracklist);
+			const match = Compare.matchTrackInList(track, tracklist);
 			
 			if (!match) return response.json({status:false, error:'no_match', data, tracklist});
 			const track_id = match.track.id;
 
 			DZ.post(request, '/user/me/tracks?track_id='+track_id, true).then(async feed => {
 				const {title, artist, album} = track;
-				const newtrack = DZ.new(track_id, title, artist, album);
-				
-				const tracklist = DeezerController.getTracklist(request);
-				tracklist.push(newtrack);
-				await DeezerController.setTracklist(request,tracklist);
-
-				response.json({status:true, newtrack});
+				const newentry = DZ.new({id: track_id, title, artist, album});
+				await DeezerController.pushTrack(request,newentry);
+				response.json({status:true, newentry});
 			}).catch(feed => {
 				response.json({status:false, error:'failed_to_add', feed});
 			})
+		}).catch(async feed => {
+			await DZ.logout(request);
+			response.json({status:false, error:'failed_to_search', feed});
 		});
 	}
 
-	async logout(request: Request, response: Response) {
-		await DZ.logout(request);		
-		response.json({status:true});
+	static getTracks(request: Request) {
+		return Cache.sessionGet(request,'deezer-tracks-list') || [];
+	}
+
+	async static setTracks(request: Request, fulllist:any[]) {		
+		await Cache.sessionSet(request,'deezer-tracks-list',fulllist);
+	}
+
+	async static pushTrack(request: Request, newentry: any) {		
+		const fulllist = DeezerController.getTracks(request);
+		fulllist.push(newentry);
+		await DeezerController.setTracks(request,fulllist);
+	}
+	
+	// ============= ARTISTS =============================================================
+
+	async loadArtists(request: Request, response: Response) {
+		pager.loadEntities(request, response, 'artists');
+	}
+
+	async findArtist(request: Request, response: Response) {
+		const body = request.body as MergedArtist;
+		const data = Compare.getDataArtist(body);		
+		const q = ['artist:"'+data.artist+'"'];
+	
+		DZ.get(request, '/search?q='+encodeURIComponent(q.join(' ')),true).then(result => {
+			const resultlist = result?.data?.data;
+			if (!resultlist) return response.json({status:false, q, error:'no_resultlist', result});
+			
+			const parsedlist = resultlist.map(item => DZ.parseEntity('artists',item.artist));
+			
+			const uniquelist = [];
+			parsedlist.forEach(entry => {
+				if (uniquelist.find(other => other.id == entry.id)) return;
+				uniquelist.push(entry);
+			});
+
+			const match = Compare.matchArtistInList(body, uniquelist);			
+			if (!match) return response.json({status:false, error:'no_match', data, uniquelist});
+
+			const found_id = match.found.id;
+
+			DZ.post(request, '/user/me/artists/&artist_id='+found_id, true).then(async feed => {
+				const { artist } = body;
+				const newentry = DZ.new({id:found_id, artist});	
+				await DeezerController.pushTrack(request,newentry);
+				response.json({status:true, newentry});
+			}).catch(feed => {
+				response.json({status:false, error:'failed_to_add', feed});
+			})
+		}).catch(async feed => {
+			await DZ.logout(request);
+			response.json({status:false, error:'failed_to_search', feed});
+		});
+	}
+
+	static getArtists(request: Request) {
+		return Cache.sessionGet(request,'deezer-artists-list') || [];
+	}
+
+	async static setArtists(request: Request, fulllist:any[]) {		
+		await Cache.sessionSet(request,'deezer-artists-list',fulllist);
+	}
+
+	async static pushArtist(request: Request, newentry: any) {		
+		const fulllist = DeezerController.getArtists(request);
+		fulllist.push(newentry);
+		await DeezerController.setArtists(request, fulllist);
 	}
 }
 

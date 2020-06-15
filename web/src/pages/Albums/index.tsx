@@ -1,14 +1,17 @@
 import React from 'react';
-import MainView from '../../components/MainView';
-import ContentPanel from '../../components/ContentPanel';
+import MergedTable from '../../components/MergedTable';
+import { MergedData } from '../../types';
+
+import imgSong from '../../images/song.png';
 
 const Albums = () => {
+
+	const fields = {
+		album: 'Album'
+	}
+
 	return (
-		<MainView>
-			<ContentPanel type='construction'>
-				The <b>ALBUMS</b>' section is under construction. Come back later!
-			</ContentPanel>
-		</MainView>
+		<MergedTable type='albums' fields={fields} icon={imgSong} />
 	)
 }
 

@@ -1,0 +1,83 @@
+@import '../../config/vars.scss';
+
+#merged-header {
+	display: grid;
+	grid-template-columns: 300px 500px auto;
+	column-gap: 20px;
+
+	#merged-search {
+		text-align: left;
+
+		.input {
+			width: 100%;
+		}
+	}
+
+	#merged-actions {
+		text-align: right;
+
+		.btn-sync {
+			width: 231px;
+		}
+	}
+
+	#merged-filters {
+		.button {
+			height: 36px;
+		}
+		
+	}
+}
+
+.merged-head {
+	height: 40px;
+
+	.merged-row {
+		margin-right: 18px;
+		div {
+			padding: 10px;
+			font-weight: bold;
+		}
+		border-bottom: 1px solid darken($color: $bordercolor, $amount: 5%);
+	}
+
+}
+
+.merged-body  {
+	height: calc(100vh - 225px);
+	border-radius: 5px;
+	overflow-y: scroll;	
+
+	.merged-row {
+		height: 40px;
+		div {
+			padding: 10px 10px;
+		}
+		&:hover {
+			background: #f3f3f3;
+		}
+	}
+}
+
+.merged-row {
+	div {
+		vertical-align: middle;
+		align-self: center;
+		overflow: hidden;
+		white-space: nowrap;
+	}
+	display: grid;
+	margin-right: 8px;
+
+	&.cols-1 {
+		grid-template-columns: auto 80px 80px;
+	}
+
+	&.cols-3 {
+		grid-template-columns: auto 22% 22% 80px 80px;
+	}
+
+	&.row-busy {
+		opacity: 0.3;
+	}
+}

@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import './styles.scss';
 
 import api from '../../services/api';
 
 import SocialButton from '../../components/SocialButton';
+import SideMenu from '../../components/SideMenu';
 import TopAuthor from '../../components/TopAuthor';
 import ContentPanel from '../../components/ContentPanel';
 
@@ -58,23 +58,7 @@ const MainView = (props: MainViewProps) => {
 		params.loading = 'Loading profile...';
 	}
 
-	sidemenu = (params.sidemenu) ? (
-		<div className="menu">
-			<Link to="/tracks" className="link">
-				<i className="music icon"></i> <label>Tracks</label>
-			</Link>
-			<Link to="/artists" className="link">
-				<i className="microphone alternate icon"></i> <label>Artists</label>
-			</Link>
-			<Link to="/albums" className="link">
-				<i className="compact disc icon"></i> <label>Albums</label>
-			</Link>
-			<hr/>
-			<Link to="/connections" className="link">
-				<i className="wifi icon"></i> <label>Connections</label>
-			</Link>
-		</div>
-	) : null;
+	sidemenu = (params.sidemenu) ? <SideMenu/> : null;
 
 	content_top = (profile) ? (props.title || (		
 		<div id="platforms">

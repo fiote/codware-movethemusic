@@ -96,7 +96,7 @@ const Connections = () => {
 		<MainView guest={true} profile={profile}>
 			<div className='ui cards'>
 				<SocialCard name='Deezer' login={profile?.deezer} clickHandler={handleClickDisconnect} perms={['Basic-Access','Manage-Library']} />
-				<SocialCard name='Spotify' login={profile?.spotify} clickHandler={handleClickDisconnect} perms={['User-Library-Read','User-Library-Manage']} />
+				<SocialCard name='Spotify' login={profile?.spotify} clickHandler={handleClickDisconnect} perms={['User-Library-Read','User-Library-Manage','User-Follow-Read','User-Follow-Modify']} />
 			</div>
 		</MainView>
 	)

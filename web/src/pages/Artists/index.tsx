@@ -1,14 +1,17 @@
 import React from 'react';
-import MainView from '../../components/MainView';
-import ContentPanel from '../../components/ContentPanel';
+import MergedTable from '../../components/MergedTable';
+import { MergedData } from '../../types';
+
+import imgMic from '../../images/microphone.png';
 
 const Artists = () => {
+
+	const fields = {
+		artist: 'Artist'
+	}
+
 	return (
-		<MainView>
-			<ContentPanel type='construction'>
-				The <b>ARTISTS</b>' section is under construction. Come back later!
-			</ContentPanel>
-		</MainView>
+		<MergedTable type='artists' fields={fields} icon={imgMic} />
 	)
 }
 

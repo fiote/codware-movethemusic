@@ -13,7 +13,7 @@ interface TrackData {
 
 export interface TrackList extends Array<TrackData> { }
 
-interface MergedData {
+interface MergedTrack {
 	id: string,
 	title: string,
 	artist: string,
@@ -39,6 +39,6 @@ export {
 	TrackData,
 	TrackList,
 	TrackListData,
-	MergedData,
+	MergedTrack,
 	MatchData
 }

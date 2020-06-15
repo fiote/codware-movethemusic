@@ -12,13 +12,17 @@ class Cache {
 		const exists = fs.existsSync(path);
 		if (!exists) return null;		
 		const content = fs.readFileSync(path);
-		const value = JSON.parse(content);
+		try {
+			const value = content ? JSON.parse(content) : null;
+		} catch(e) {
+			const value = '';
+		}
 		return value;
 	}
 
 	static set(filename: string, value: any) {
 		const path = Cache.path(filename);
-		const content = JSON.stringify(value);
+		const content = value ? JSON.stringify(value) : '';
 		fs.writeFileSync(path, content);
 	}
 

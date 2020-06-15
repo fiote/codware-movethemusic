@@ -1,6 +1,6 @@
 import { TrackData } from '../types';
 
-interface MergedData {
+interface MergedTrack {
 	id: string,
 	
 	title: string,
@@ -22,9 +22,48 @@ interface MatchData {
 	track: TrackData
 }
 
+
+interface MergedArtist {
+	id: string,
+	artist: string,
+	cartist: string,
+	image_url: string,
+	mtype: Object,
+	platforms: {
+		[key: string]: ArtistData
+	}
+}
+
+interface MatchArtist {
+	mtype: Object,
+	found: ArtistData
+}
+
+interface ArtistData {
+	id: string,
+	artist: string,
+	cartist: string,
+	image_url: string
+}
+
 class Compare {
 	
-	static matchTypes = [
+	// ============= BASE ================================================================
+
+	static clearValue(value: string, pristine: bool = false) {
+		let clear = value;
+		clear = clear.replace(/\s*\(.*?\)\s*/g,'');
+		clear = clear.replace(/\s*\[.*?\]\s*/g,'');
+		clear = clear.split('and').join(' ');
+		clear = clear.split('of').join(' ');
+		if (pristine) clear = clear.replace(/[^a-z0-9 ]/gi,'');
+		clear = clear.replace(/\s+/g, " ");
+		return clear;
+	}
+
+	// ============= TRACKS ==============================================================
+
+	static matchTypesTracks = [
 		{},
 		{containsTitle:true},
 		{removeExtra:true},
@@ -35,30 +74,51 @@ class Compare {
 		{removeExtra:true, ignoreAlbum:true, containsTitle:true},
 	];
 
-	static getData(track: any) {		
-		const albumparts = Compare.clearValue(track.calbum).split(' ');
-		albumparts.sort((a,b) => a.length > b.length ? -1 : +1);
+	static mergeTracks(akey: string, alist: TrackData[], bkey: string, blist: TrackData[]) {
+		const merged = [] as MergedTrack[];
+
+		alist = Array.from(alist);
+		blist = Array.from(blist);
+
+		const matched:MergedTrack[] = [];
 		
-		const artistparts = Compare.clearValue(track.cartist).split(' ');
-		artistparts.sort((a,b) => a.length > b.length ? -1 : +1);
-
-		return {
-			title: Compare.clearValue(track.ctitle),
-			album: albumparts[0],
-			artist: artistparts[0]
+		while (alist.length) {
+			const atrack = alist.shift() as TrackData;
+			const entry = Compare.createMergeTrack(akey, atrack);
+			const match = Compare.matchTrackInList(atrack, blist);
+			if (match) {
+				entry.mtype = match.mtype
+				entry.platforms[bkey] = match.found;
+				matched.push(match.found);
+				match.found.merged = true;
+			}
+			merged.push(entry);
 		}
+
+		while (matched.length) {
+			const track = matched.shift();
+			const index = blist.indexOf(track);
+			if (index >= 0) blist.splice(index,1);
+		}
+
+		while (blist.length) {
+			const btrack:TrackData = blist.shift();
+			const entry = Compare.createMergeTrack(bkey, btrack);
+			merged.push(entry);
+		}
+
+		return merged;
 	}
 
-	static clearValue(value: string, pristine: bool = false) {
-		let clear = value;
-		let clear = clear.replace(/\s*\(.*?\)\s*/g,'');
-		let clear = clear.replace(/\s*\[.*?\]\s*/g,'');
-		if (pristine) clear = clear.replace(/[^a-z0-9]/gi,'');
-		return clear;
+	static createMergeTrack(platform: string, track: TrackData) : MergedTrack {
+		const { id, title, artist, album, ctitle, cartist, calbum, image_url } = track;
+		const entry = { id:platform+'-'+id, title, artist, album, image_url, ctitle, cartist, calbum, platforms:{} };
+		entry.platforms[platform] = track;
+		return entry;
 	}
 
-	static matchInList(atrack: TrackData, list: TrackData[]) : MatchData {
-		for (var matchType of Compare.matchTypes) {
+	static matchTrackInList(atrack: TrackData, list: TrackData[]) : MatchData {
+		for (var matchType of Compare.matchTypesTracks) {
 			
 			const a = {title: atrack.ctitle, artist: atrack.cartist, album: atrack.calbum};
 			if (matchType.removeExtra) {
@@ -80,57 +140,101 @@ class Compare {
 					title: (a.title === b.title || (matchType.containsTitle && (a.title.indexOf(b.title) >= 0 || b.title.indexOf(a.title) >= 0))),
 					artist: a.artist === b.artist,
 					album: a.album === b.album,
-					track: btrack,
+					found: btrack,
 					mtype: matchType
 				};
 			}).filter(match => match.title || match.artist || match.album);
 
-			var found = similar.find(match => match.title && match.artist && (match.album || matchType.ignoreAlbum));
-			if (found) return {mtype:found.mtype, track:found.track};
+			var match = similar.find(match => match.title && match.artist && (match.album || matchType.ignoreAlbum));
+			if (match) return {mtype:match.mtype, found:match.found};
 		}
 	}
 
-	static createMerge(platform: string, track: TrackData) : MergedData {
-		const { id, title, artist, album, ctitle, cartist, calbum, image_url } = track;
-		const entry = { id:platform+'-'+id, title, artist, album, image_url, ctitle, cartist, calbum, platforms:{} };
-		entry.platforms[platform] = track;
-		return entry;
+	static getDataTrack(track: any) {		
+		const albumparts = Compare.clearValue(track.calbum).split(' ');
+		albumparts.sort((a,b) => a.length > b.length ? -1 : +1);
+		
+		const artistparts = Compare.clearValue(track.cartist).split(' ');
+		artistparts.sort((a,b) => a.length > b.length ? -1 : +1);
+
+		return {
+			title: Compare.clearValue(track.ctitle),
+			album: albumparts[0],
+			artist: artistparts[0]
+		}
 	}
 
-	static mergeLists(akey: string, alist: TrackData[], bkey: string, blist: TrackData[]) {		
-		const merged = [] as MergedData[];
+	// ============= ARTISTS =============================================================
+	
+	static matchTypesArtists = [
+		{},
+		{removeExtra:true},
+	];
+
+	static mergeArtists(akey: string, alist: ArtistData[], bkey: string, blist: ArtistData[]) {
+		const merged = [];
 
 		alist = Array.from(alist);
 		blist = Array.from(blist);
 
-		const matched:MergedData[] = [];
+		const matched:MergedArtist[] = [];
 		
 		while (alist.length) {
-			const atrack = alist.shift() as TrackData;
-			const entry = Compare.createMerge(akey, atrack);
-			const match = Compare.matchInList(atrack, blist);
+			const a:ArtistData = alist.shift();
+			const entry = Compare.createMergeArtist(akey, a);
+			const match = Compare.matchArtistInList(a, blist);
 			if (match) {
-				entry.mtype = match.mtype
-				entry.platforms[bkey] = match.track;
-				matched.push(match.track);
-				match.track.merged = true;
+				entry.mtype = match.mtype;
+				entry.platforms[bkey] = match.found;
+				matched.push(match.found);
+				match.found.merged = true;
 			}
 			merged.push(entry);
 		}
 
 		while (matched.length) {
-			const track = matched.shift();
-			const index = blist.indexOf(track);
+			const found = matched.shift();
+			const index = blist.indexOf(found);
 			if (index >= 0) blist.splice(index,1);
 		}
 
 		while (blist.length) {
-			const btrack:TrackData = blist.shift();
-			const entry = Compare.createMerge(bkey, btrack);
+			const b:ArtistData = blist.shift();
+			const entry = Compare.createMergeArtist(bkey, b);
 			merged.push(entry);
 		}
 
 		return merged;
+	}
+	
+	static createMergeArtist(platform: string, data: ArtistData) : MergedArtist {
+		const { id, artist, cartist, image_url } = data;
+		const entry = { id:platform+'-'+id, artist, cartist, image_url, platforms:{} };
+		entry.platforms[platform] = data;
+		return entry;
+	}
+
+	static matchArtistInList(dataA: ArtistData, list: ArtistData[]) : MatchArtist {
+		
+		for (var matchType of Compare.matchTypesTracks) {				
+			const a = {artist: dataA.cartist};
+			if (matchType.removeExtra) a.artist = Compare.clearValue(a.artist,true);
+
+			var found = list.find(dataB => {
+				const b = {artist: dataB.cartist};					
+				if (matchType.removeExtra) b.artist = Compare.clearValue(b.artist,true);
+
+				if (a.artist == b.artist) return b;
+			});
+
+			if (found) return {mtype:matchType, found};
+		}
+	}
+
+	static getDataArtist(item: any) {
+		return {
+			artist: Compare.clearValue(item.cartist,true)
+		}
 	}
 }
 
