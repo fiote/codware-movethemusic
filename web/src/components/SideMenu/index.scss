@@ -1,0 +1,30 @@
+@import '../../config/vars.scss';
+
+#sidebar {
+	.menu {
+		padding-top: 20px;
+
+		.link {
+			padding: 10px;
+			display: block;
+			color: inherit;
+			* {
+				cursor: pointer;
+			}
+			&:hover {
+				color: lighten($color: $textcolor, $amount: 20%);
+			}
+		}
+
+		hr {
+			opacity: 0.1;
+			width: 90%;
+		}
+
+		.bottom-menu {
+			position: absolute;
+			width: 90%;
+			bottom: 5px;
+		}
+	}
+}
