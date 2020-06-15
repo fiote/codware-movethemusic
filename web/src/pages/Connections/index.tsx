@@ -5,7 +5,7 @@ import ContentTitle from '../../components/ContentTitle';
 import './index.scss';
 
 import api from '../../services/api';
-
+  
 interface Profile {
 	deezer: {
 		logged: boolean,
