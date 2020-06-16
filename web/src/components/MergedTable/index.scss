@@ -1,11 +1,19 @@
 @import '../../config/vars.scss';
 
-#merged-header {
+.merged-table {
+	position: absolute;
+    left: 0px;
+    right: 0px;
+    top: 40px;
+    bottom: 0px
+}
+
+.merged-header {
 	display: grid;
 	grid-template-columns: 300px 500px auto;
 	column-gap: 20px;
 
-	#merged-search {
+	.merged-search {
 		text-align: left;
 
 		.input {
@@ -13,7 +21,7 @@
 		}
 	}
 
-	#merged-actions {
+	.merged-actions {
 		text-align: right;
 
 		.btn-sync {
@@ -21,7 +29,7 @@
 		}
 	}
 
-	#merged-filters {
+	.merged-filters {
 		.button {
 			height: 36px;
 		}
@@ -30,7 +38,11 @@
 }
 
 .merged-head {
-	height: 40px;
+    height: 40px;
+    position: absolute;
+    top: 5px;
+    left: 10px;
+    right: 10px;
 
 	.merged-row {
 		margin-right: 18px;
@@ -43,8 +55,13 @@
 
 }
 
-.merged-body  {
-	height: calc(100vh - 225px);
+.merged-body {
+	position: absolute;
+	top: 45px;
+    right: 10px;
+    left: 10px;
+    bottom: 7px;
+
 	border-radius: 5px;
 	overflow-y: scroll;	
 

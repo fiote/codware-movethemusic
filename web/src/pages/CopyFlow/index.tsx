@@ -121,7 +121,7 @@ const CopyFlow = (props: CopyFlowProps) => {
 	return (
 		<MainView progressbar={qtTotal ? qtDone*100/qtTotal : 0} progresstext={ptext} title={title} >
 			<ContentPanel>
-				<div id="copy-box">
+				<div className="copy-box">
 					<div className="copy-number">{qtDone+1}/{qtTotal}</div>
 					<img className="copy-cover" src={currentItem.image_url} />
 					{content}

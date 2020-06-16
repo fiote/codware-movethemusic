@@ -3,7 +3,7 @@ import React from 'react';
 const TopAuthor = () => {
 	return (
 		<a className="gitlink" target='_blank' href='https://www.linkedin.com/in/murilomielke/' rel='noopener noreferrer'>
-			<div id="author">
+			<div className="author">
 				<div className="name">
 					Made by<br/>
 					<span>Murilo Mielke</span>

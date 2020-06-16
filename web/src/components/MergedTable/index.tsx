@@ -99,10 +99,10 @@ const MergedTable = (props: MergedTableProps) => {
 
 	useEffect(() => {
 		setSideFilters([
-			{code: '', label:'Any Side', qty:counter['total']},
-			{code: 'both', label:'Both Sides', qty:counter['both']},
-			{code: 'deezer', label:'Only at Deezer', qty:counter['deezer']},
-			{code: 'spotify', label:'Only at Spotify', qty:counter['spotify']}
+			{code: '', label:'Any Side', mobile:'Any', qty:counter['total']},
+			{code: 'both', label:'Both Sides', mobile:'Both', qty:counter['both']},
+			{code: 'deezer', label:'Only at Deezer', mobile:'Dz', qty:counter['deezer']},
+			{code: 'spotify', label:'Only at Spotify', mobile:'Sp', qty:counter['spotify']}
 		]);
 	},[counter]);
 
@@ -191,36 +191,42 @@ const MergedTable = (props: MergedTableProps) => {
 
 	return (
 		<MainView>
-			<div id="merged-header" className="p-1 mb-2">
-
-				<div id="merged-search" className="">
+			<div className="p-1 mb-2 merged-header">
+				<div className="merged-search">
 					<div className="ui icon input">
 						<i className="search icon"></i>
 						<input type="text" placeholder="Search..." defaultValue={ls_search} onChange={handleSearchChange}/>
 					</div>
 				</div>
 
-				<div id="merged-filters" className="ui buttons">
+				<div className="ui buttons merged-filters">
 					{sideFilters && sideFilters.map(sidef => {
 						return (
-							<button key={sidef.code} className={['ui','button',sidef.code === side ? 'active' : ''].join(' ')} onClick={() => handleSideFilterClick(sidef.code)} >{sidef.label} ({sidef.qty})</button>
+							<button key={sidef.code} className={['ui','button',sidef.code === side ? 'active' : ''].join(' ')} onClick={() => handleSideFilterClick(sidef.code)} >
+								<span className='big-text'>{sidef.label} ({sidef.qty})</span>
+								<span className='small-text'>{sidef.mobile} ({sidef.qty})</span>
+							</button>
 						)
 					})}
 				</div>
-				<div id="merged-actions" className="">
+				<div className="merged-actions">
 					<button className="ui right labeled icon teal button btn-sync btn-sp" disabled={missing.spotify.length === 0} onClick={() => handleClickMove('deezer','spotify')} >
 						<i className="upload icon"></i>
-						Deezer to Spotify ({missing.spotify.length})
+						<div className='big-text'>Deezer to Spotify ({missing.spotify.length})</div>
+						<div className='small-text'>Dz to Sp ({missing.spotify.length})</div>
 					</button>
 					<button className="ui right labeled icon teal button btn-sync btn-dz" disabled={missing.deezer.length === 0} onClick={() => handleClickMove('spotify','deezer')} >
 						<i className="upload icon"></i>
-						Spotify to Deezer ({missing.deezer.length})
+						<div className='big-text'>Spotify to Deezer ({missing.deezer.length})</div>
+						<div className='small-text'>Sp to Dz ({missing.deezer.length})</div>
 					</button>
 				</div>
 			</div>
-
-			<MergedHead fields={props.fields} />
-			<MergedBody fields={props.fields} list={filteredList} type={mergetype} profile={profile} onChanged={handleChangeItem} />
+			
+			<div className="merged-table">
+				<MergedHead fields={props.fields} />
+				<MergedBody fields={props.fields} list={filteredList} type={mergetype} profile={profile} onChanged={handleChangeItem} />
+			</div>
 		</MainView>
 	)
 }
@@ -279,8 +285,14 @@ const MergedHead = (props: MergedHeadProps) => {
 		<div className='merged-head'>
 			<div className={classRow}>
 				{divs}
-				<div className="text-center cell-platform">Deezer</div>
-				<div className="text-center cell-platform">Spotify</div> 
+				<div className="text-center cell-platform">
+					<span className='big-text'>Deezer</span>
+					<span className='small-text'>Dz</span>
+				</div>
+				<div className="text-center cell-platform">
+					<span className='big-text'>Spotify</span>
+					<span className='small-text'>Sp</span>					
+				</div> 
 			</div>	
 		</div>
 	)

@@ -61,7 +61,7 @@ const MainView = (props: MainViewProps) => {
 	sidemenu = (params.sidemenu) ? <SideMenu/> : null;
 
 	content_top = (profile) ? (props.title || (		
-		<div id="platforms">
+		<div className="platforms">
 			<SocialButton data={profile?.deezer} platform='Deezer' />
 			<SocialButton data={profile?.spotify} platform='Spotify' />
 		</div>
@@ -80,17 +80,17 @@ const MainView = (props: MainViewProps) => {
 	const gridclass = ['grid',!sidemenu && 'menuless'].join(' ');
 
 	return (
-		<div id='grid' className={gridclass}>
-			<div id='sidebar'>
-				<div className="top">
+		<div className={gridclass}>
+			<div className='sidebar'>
+				<div className='top'>
 					<h1>Move<br/>TheMusic</h1>
 				</div>
 				<div className="body">
 					{sidemenu}
 				</div>
 			</div>
-			<div id='content'>
-				<div className="top">
+			<div className='content'>
+				<div className='top'>
 					{content_top}
 					<TopAuthor/>
 				</div>
