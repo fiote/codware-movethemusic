@@ -80,18 +80,17 @@ const Credits = () => {
 	];
 
 	return (
-		<MainView title='Credits'>
+		<MainView title='Credits' guest={true}>
 			<div style={{padding: 10}}>
 				<div className='ui list'>
 					{listing.map(data => {
-						const datalink = 'https://'+data.link;
 						const madelink = 'https://'+data.made.link;
 						const fromlink = 'https://'+data.from.link;
 						return (
 							<div key={data.link} className='item'>
 								<img className='ui square image' src={data.img} />
 								<div className='content'>
-									<a className='header' href={datalink} target='_blank'>{data.name}</a>
+									<a className='header' href={data.link} target='_blank'>{data.name}</a>
 									<div className='description'>
 										made by <a href={madelink} target="_blank">{data.made.name}</a> from <a href={fromlink} title={data.from.name}> {data.from.link}</a>
 									</div>
