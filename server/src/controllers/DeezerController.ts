@@ -1,11 +1,11 @@
 import { Request, Response } from 'express';
 import Cache from '../classes/Cache';
 import axios from 'axios';
-import Compare from '../classes/Compare'; 
-import Pager from '../classes/Pager'; 
+import Compare from '../classes/Compare';
+import Pager from '../classes/Pager';
 
 import { TrackListData, TrackData, MergedTrack } from '../types';
-  
+
 const app_id = process.env.DEEZER_APPID;
 const secret_key = process.env.DEEZER_SECRETKEY;
 
@@ -14,7 +14,7 @@ const authUrl = 'https://connect.deezer.com/oauth/auth.php?app_id='+app_id+'&red
 
 interface DzTrackData {
 	id: number,
-	title: string, 
+	title: string,
 	artist: {
 		name: string
 	},
@@ -25,7 +25,7 @@ interface DzTrackData {
 
 class DZ {
 	static data(request: Request) {
-		const data = Cache.sessionGet(request, 'deezerData');
+		const data = request.getData('deezerData');
 		return data as {auth: string, userId: string, playlistId: number};
 	}
 
@@ -43,10 +43,8 @@ class DZ {
 	}
 
 	async static logout(request: Request) {
-		await Cache.remove('deezerData',request);	
-		await Cache.remove('deezerTracklist',request);	
-		await Cache.remove('deezer-tracks-list',request);	
-		await Cache.remove('deezer-artists-list',request);	
+		await request.setData('deezerData',null);
+		await pager.empty(request,['tracks','albums','artists']);
 	}
 
 	static get(request: Request, endpoint: string, authed: boolean) {
@@ -123,9 +121,9 @@ class DZ {
 				artist: entry.artist.name,
 				image_url: entry.album.cover_medium,
 				ctitle: '', cartist: '', calbum:''
-			};			
+			};
 			return DZ.addc(data);
-		}	
+		}
 		if (type == 'albums') {
 			const data = {
 				id: entry.id,
@@ -135,7 +133,7 @@ class DZ {
 				ctitle: '', cartist: '', calbum:''
 			}
 			return DZ.addc(data);
-		}	
+		}
 		if (type == 'artists') {
 			const data = {
 				id: entry.id,
@@ -165,40 +163,40 @@ class DeezerController {
 	async checkCode(request: Request, response: Response) {
 		const authCode = request.query.code;
 		if (!authCode) return response.json({status:false, error:'no_auth_code'});
-		
+
 		await DZ.logout(request);
 
 		const result = await axios.get('https://connect.deezer.com/oauth/access_token.php?app_id='+app_id+'&secret='+secret_key+'&code='+authCode);
 		const authData = result?.data;
 		if (!authData || authData == 'wrong code') return response.json({status:false, error:'bad_auth_code'})
-		
-		const deezerData = {auth:authData, userId:null, playlistId:null};	
-		await Cache.sessionSet(request, 'deezerData', deezerData);
+
+		const deezerData = {auth:authData, userId:null, playlistId:null};
+		await request.setData('deezerData', deezerData);
 
 		deezerData.userId = await DeezerController.getUserId(request);
 		if (!deezerData.userId) {
 			await DZ.logout(request);
 			return response.json({status:false, error:'no_user_id', logout:true});
 		}
-		await Cache.sessionSet(request, 'deezerData', deezerData);
+		await request.setData('deezerData', deezerData);
 
 		deezerData.playlistId = await DeezerController.getPlaylistId(request);
 		if (!deezerData.playlistId) {
 			await DZ.logout(request);
 			return response.json({status:false, error:'no_playlist_id', logout:true});
 		}
-		await Cache.sessionSet(request, 'deezerData', deezerData);
+		await request.setData('deezerData',deezerData);
 
 		response.json({status:true});
 	}
 
 	async logout(request: Request, response: Response) {
-		await DZ.logout(request);		
+		await DZ.logout(request);
 		response.json({status:true});
 	}
 
 	// ============= DATA ================================================================
-	
+
 	static async getUserId(request: Request) {
 		return new Promise(resolve => {
 			DZ.get(request, '/user/me', true).then(result => {
@@ -208,9 +206,9 @@ class DeezerController {
 			});
 		});
 	}
-	
+
 	static async getPlaylistId(request: Request) {
-		const deezerData = Cache.sessionGet(request, 'deezerData');
+		const deezerData = request.getData('deezerData');
 
 		return new Promise(resolve => {
 			DZ.get(request, '/user/'+deezerData.userId+'/playlists', true).then(result => {
@@ -228,25 +226,23 @@ class DeezerController {
 		pager.loadEntities(request, response, 'tracks');
 	}
 
-	static getTracks(request: Request) {
-		return Cache.sessionGet(request,'deezer-tracks-list') || [];
+	async static getTracks(request: Request) {
+		return pager.get(request, 'tracks');
 	}
 
 	async static setTracks(request: Request, fulllist:any[]) {
-		await Cache.sessionSet(request,'deezer-tracks-list',fulllist);
+		await pager.set(request, 'tracks', fulllist);
 	}
 
 	async static pushTrack(request: Request, newentry: any) {
-		const fulllist = DeezerController.getTracks(request);
-		fulllist.push(newentry);
-		await DeezerController.setTracks(request,fulllist);
+		await pager.set(request, 'tracks', newentry);
 	}
 
 	async findTrack(request: Request, response: Response) {
 		const body = request.body;
 		const data = Compare.getDataTrack(body);
 
-		const q = [data.title,data.artist,data.album]; 
+		const q = [data.title,data.artist,data.album];
 
 		DZ.get(request, '/search/track?q='+encodeURIComponent(q.join(' ')),true).then(async result => {
 			const resultlist = result?.data?.data;
@@ -254,8 +250,8 @@ class DeezerController {
 				await DZ.logout(request);
 				return resolve({status:false, logout:true});
 			}
-			const parsedlist = resultlist.map(item => DZ.parseEntity('tracks',item));		
-			
+			const parsedlist = resultlist.map(item => DZ.parseEntity('tracks',item));
+
 			const match = Compare.matchTrackInList(body, parsedlist);
 			if (!match) return response.json({status:false, error:'no_match', data, parsedlist});
 			const track_id = match.found.id;
@@ -291,18 +287,18 @@ class DeezerController {
 	async static pushAlbum(request: Request, newentry: any) {
 		await pager.push(request, 'albums', newentry);
 	}
-	
+
 	async findAlbum(request: Request, response: Response) {
 		const body = request.body;
 		const data = Compare.getDataAlbum(body);
 		const q = ['album:"'+data.album+'"'];
-	
+
 		DZ.get(request, '/search?q='+encodeURIComponent(q.join(' ')),true).then(result => {
 			const resultlist = result?.data?.data;
 			if (!resultlist) return response.json({status:false, q, error:'no_resultlist', result});
-			
+
 			const parsedlist = resultlist.map(item => DZ.parseEntity('albums',{...item.album, artist:item.artist}));
-			
+
 			const uniquelist = [];
 			parsedlist.forEach(entry => {
 				if (uniquelist.find(other => other.id == entry.id)) return;
@@ -316,7 +312,7 @@ class DeezerController {
 
 			DZ.post(request, '/user/me/albums?album_id='+found_id, true).then(async feed => {
 				const { artist } = body;
-				const newentry = DZ.new({id:found_id, album, artist});	
+				const newentry = DZ.new({id:found_id, album, artist});
 				await DeezerController.pushAlbum(request,newentry);
 				response.json({status:true, newentry});
 			}).catch(feed => {
@@ -327,7 +323,7 @@ class DeezerController {
 			response.json({status:false, error:'failed_to_search', logout:true, feed});
 		});
 	}
-	
+
 	// ============= ARTISTS =============================================================
 
 	async loadArtists(request: Request, response: Response) {
@@ -335,30 +331,28 @@ class DeezerController {
 	}
 
 	static getArtists(request: Request) {
-		return Cache.sessionGet(request,'deezer-artists-list') || [];
+		return pager.get(request, 'artists');
 	}
 
 	async static setArtists(request: Request, fulllist:any[]) {
-		await Cache.sessionSet(request,'deezer-artists-list',fulllist);
+		await pager.set(request, 'artists', fulllist);
 	}
 
 	async static pushArtist(request: Request, newentry: any) {
-		const fulllist = DeezerController.getArtists(request);
-		fulllist.push(newentry);
-		await DeezerController.setArtists(request, fulllist);
+		await pager.set(request, 'artists', newentry);
 	}
 
 	async findArtist(request: Request, response: Response) {
 		const body = request.body;
 		const data = Compare.getDataArtist(body);
 		const q = ['artist:"'+data.artist+'"'];
-	
+
 		DZ.get(request, '/search?q='+encodeURIComponent(q.join(' ')),true).then(result => {
 			const resultlist = result?.data?.data;
 			if (!resultlist) return response.json({status:false, q, error:'no_resultlist', result});
-			
+
 			const parsedlist = resultlist.map(item => DZ.parseEntity('artists',item.artist));
-			
+
 			const uniquelist = [];
 			parsedlist.forEach(entry => {
 				if (uniquelist.find(other => other.id == entry.id)) return;
@@ -372,7 +366,7 @@ class DeezerController {
 
 			DZ.post(request, '/user/me/artists?artist_id='+found_id, true).then(async feed => {
 				const { artist } = body;
-				const newentry = DZ.new({id:found_id, artist});	
+				const newentry = DZ.new({id:found_id, artist});
 				await DeezerController.pushArtist(request,newentry);
 				response.json({status:true, newentry});
 			}).catch(feed => {
@@ -383,7 +377,7 @@ class DeezerController {
 			response.json({status:false, error:'failed_to_search', logout:true, feed});
 		});
 	}
-	
+
 }
 
 export default DeezerController;

@@ -10,7 +10,7 @@ class Cache {
 	static get(filename: string) {
 		const path = Cache.path(filename);
 		const exists = fs.existsSync(path);
-		if (!exists) return null;		
+		if (!exists) return null;
 		const content = fs.readFileSync(path);
 		try {
 			const value = content ? JSON.parse(content) : null;
@@ -26,18 +26,17 @@ class Cache {
 		fs.writeFileSync(path, content);
 	}
 
-	static remove(filename: string, request: any) {
+	static remove(request: Request, filename: string) {
 		return new Promise(resolve => {
 			const path = Cache.path(filename);
 			const exists = fs.existsSync(path);
 			if (exists) fs.unlinkSync(path);
-			request.session[filename] = null;
-			request.session.save(resolve);
+			request.setData(filename,null).then(resolve);
 		});
 	}
 
 	static sessionGet(request: Request, field: string) {
-		return request.session?.[field] || Cache.get(field);
+		return request.getData(field) || Cache.get(field);
 	}
 
 	static sessionPush(request: Request, field: string, item: any) {
@@ -48,13 +47,8 @@ class Cache {
 
 	static sessionSet(request: Request, field: string, value: any) {
 		return new Promise(resolve => {
-			if (request.session) {
-				request.session[field] = value;
-				Cache.set(field, value);
-				request.session?.save(resolve);
-			} else {
-				resolve();
-			}
+			Cache.set(field, value);
+			request.setData(field,value).then(resolve);
 		});
 	}
 }

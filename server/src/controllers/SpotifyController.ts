@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
 import Cache from '../classes/Cache';
 import axios from 'axios';
-import Compare from '../classes/Compare'; 
-import Pager from '../classes/Pager'; 
+import Compare from '../classes/Compare';
+import Pager from '../classes/Pager';
 import { TrackListData, TrackData, MergedTrack, MergedArtist } from '../types';
 
 const client_id = process.env.SPOTIFY_CLIENTID;
@@ -12,7 +12,7 @@ const authUrl = 'https://accounts.spotify.com/authorize?response_type=token&clie
 
 class SP {
 	static data(request: Request) {
-		const data = Cache.sessionGet(request, 'spotifyData');
+		const data = request.getData('spotifyData');
 		return data as {auth: string, userId: string, playlistId: number};
 	}
 
@@ -29,10 +29,8 @@ class SP {
 	}
 
 	async static logout(request: Request) {
-		await Cache.remove('spotifyData',request);	
-		await Cache.remove('spotify-tracks-list',request);
-		await Cache.remove('spotify-artists-list',request);
-		await Cache.remove('spotify-albums-list',request);
+		await request.setData('spotifyData',null);
+		await pager.empty(request,['tracks','albums','artists']);
 	}
 
 	static headers(request: Request) {
@@ -133,7 +131,7 @@ class SP {
 				id: entry.id,
 				artist: entry.name,
 				image_url: entry.images.find(image => image.width <= 400)?.url
-			}	
+			}
 			return SP.addc(data);
 		}
 	}
@@ -145,35 +143,34 @@ const pager = new Pager('spotify', SP, {
 });
 
 class SpotifyController {
-	
+
 	// ============= AUTH ================================================================
 
 	static getLogged(request: Request) {
 		const data = SP.data(request);
 		return {logged: data?.auth ? true : false, authUrl};
 	}
-	
+
 	async checkCode(request: Request, response: Response) {
 		const accessToken = request.query.access_token;
 		if (!accessToken) return response.json({status:false, error:'no_acess_token'});
 
 		await SP.logout(request);
 
-		const spotifyData = {auth:accessToken};				
-		await Cache.sessionSet(request, 'spotifyData', spotifyData);
+		const spotifyData = {auth:accessToken};
+		await request.setData('spotifyData',spotifyData);
 
-		const saved = Cache.sessionGet(request, 'spotifyData');
 		return response.json({status:true});
 	}
 
 	async logout(request: Request, response: Response) {
-		await SP.logout(request);		
+		await SP.logout(request);
 		response.json({status:true});
 	}
-	
+
 	// ============= DATA ================================================================
 
-	
+
 	// ============= TRACKS ==============================================================
 
 	async loadTracks(request: Request, response: Response) {
@@ -184,14 +181,14 @@ class SpotifyController {
 		return pager.get(request, 'tracks');
 	}
 
-	async static setTracks(request: Request, fulllist:any[]) {		
+	async static setTracks(request: Request, fulllist:any[]) {
 		await pager.set(request, 'tracks', fulllist);
 	}
 
-	async static pushTrack(request: Request, newentry: any) {		
+	async static pushTrack(request: Request, newentry: any) {
 		await pager.push(request, 'tracks', newentry);
 	}
-	
+
 	async findTrack(request: Request, response: Response) {
 		const body = request.body;
 		const data = Compare.getDataTrack(body);
@@ -202,7 +199,7 @@ class SpotifyController {
 			if (!resultlist) return response.json({status:false, q, error:'no_resultlist', result});
 
 			const parsedlist = resultlist.items.map(item => SP.parseEntity('tracks',item));
-			const match = Compare.matchTrackInList(body, parsedlist);			
+			const match = Compare.matchTrackInList(body, parsedlist);
 			if (!match) return response.json({status:false, error:'no_match', q, data, parsedlist});
 			const found_id = match.found.id;
 
@@ -217,9 +214,9 @@ class SpotifyController {
 		}).catch(async feed => {
 			await SP.logout(request);
 			response.json({status:false, error:'failed_to_search', logout:true, feed});
-		})	
+		})
 	}
-	
+
 	// ============= ALBUMS ==============================================================
 
 	async loadAlbums(request: Request, response: Response) {
@@ -230,7 +227,7 @@ class SpotifyController {
 		return pager.get(request, 'albums');
 	}
 
-	async static setAlbums(request: Request, fulllist:any[]) {		
+	async static setAlbums(request: Request, fulllist:any[]) {
 		await pager.set(request, 'albums', fulllist);
 	}
 
@@ -248,11 +245,11 @@ class SpotifyController {
 			if (!resultlist) return response.json({status:false, q, error:'no_resultlist', result});
 
 			const parsedlist = resultlist.items.map(item => SP.parseEntity('albums',item));
-			
-			const match = Compare.matchAlbumInList(body, parsedlist);			
+
+			const match = Compare.matchAlbumInList(body, parsedlist);
 			if (!match) return response.json({status:false, error:'no_match', data, parsedlist});
 			const found_id = match.found.id;
-			
+
 			SP.put(request, '/me/albums?ids='+found_id).then(async feed => {
 				const {artist, album} = body;
 				const newentry = SP.new({id: found_id, artist, album});
@@ -264,9 +261,9 @@ class SpotifyController {
 		}).catch(async feed => {
 			await SP.logout(request);
 			response.json({status:false, error:'failed_to_search', logout:true, feed});
-		})	
+		})
 	}
-	
+
 	// ============= ARTISTS =============================================================
 
 	async loadArtists(request: Request, response: Response) {
@@ -277,29 +274,29 @@ class SpotifyController {
 		return pager.get(request, 'artists');
 	}
 
-	async static setArtists(request: Request, fulllist:any[]) {		
+	async static setArtists(request: Request, fulllist:any[]) {
 		await pager.set(request, 'artists', fulllist);
 	}
 
-	async static pushArtist(request: Request, newentry: any) {		
+	async static pushArtist(request: Request, newentry: any) {
 		await pager.push(request, 'artists', newentry);
 	}
 
 	async findArtist(request: Request, response: Response) {
 		const body = request.body as MergedArtist;
-		const data = Compare.getDataArtist(body);		
+		const data = Compare.getDataArtist(body);
 		const q = [data.artist];
-		
+
 		SP.get(request, '/search?q='+encodeURIComponent(q.join(' '))+'&type=artist',true).then(result => {
 			const resultlist = result?.data?.artists;
 			if (!resultlist) return response.json({status:false, q, error:'no_resultlist', result});
-			
+
 			const parsedlist = resultlist.items.map(item => SP.parseEntity('artists',item));
-			const match = Compare.matchArtistInList(body, parsedlist);			
+			const match = Compare.matchArtistInList(body, parsedlist);
 			if (!match) return response.json({status:false, error:'no_match', data, parsedlist});
 
 			const found_id = match.found.id;
-			
+
 			SP.put(request, '/me/following?type=artist&ids='+found_id).then(async feed => {
 				const { artist } = body;
 				const newentry = SP.new({id:found_id, artist});

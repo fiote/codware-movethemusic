@@ -1,20 +1,21 @@
+import { Request, Response } from 'express';
 import Cache from '../classes/Cache';
 
 class Pager {
-	constructor(platform: string, parser: any, options: any) {		
+	constructor(platform: string, parser: any, options: any) {
 		this.platform = platform;
 		this.parser = parser;
 		this.options = options;
 	}
 
-	async loadEntities(request: Request, response: Response, type: string) {		
+	async loadEntities(request: Request, response: Response, type: string) {
 		const data = this.parser.data(request);
 		const keylist = this.platform+'-'+type+'-list';
 		if (!data) return response.json({status:false, error:'no_session_data'});
 
 		const ipage = Number(request.params.page) || 1;
 		const slast = request.params.lastid || '';
-		const list = Cache.sessionGet(request,keylist) || [];
+		const list = request.getData(keylist,[]);
 
 		const pagedata = await this.getEntityPage(request, type, ipage, slast);
 		if (!pagedata.status) return response.json(pagedata);
@@ -27,7 +28,7 @@ class Pager {
 			lastid = entry.id;
 		});
 
-		await Cache.sessionSet(request,keylist,list);
+		await request.setData(keylist,list);
 
 		const loaded = list.length;
 		const total = pagedata.total;
@@ -54,21 +55,32 @@ class Pager {
 				// await this.parser.logout(request);
 				return resolve({status:false, error:'catch', details:result, logout:true});
 			});
-		});	
+		});
+	}
+
+	keylist(type:string) {
+		return this.platform+'-'+type+'-list';
 	}
 
 	get(request: Request, type: string) {
-		return Cache.sessionGet(request,this.platform+'-'+type+'-list') || [];
+		const keylist = this.keylist(type);
+		return request.getData(keylist,[]);
 	}
 
 	async set(request: Request, type: string, fulllist: any[]) {
-		await Cache.sessionSet(request,this.platform+'-'+type+'-list',fulllist);		
+		const keylist = this.keylist(type);
+		await request.setData(keylist,fulllist);
 	}
 
 	async push(request: Request, type: string, newentry: any) {
 		const fulllist = this.get(request, type);
 		fulllist.push(newentry);
 		await this.set(request, type, fulllist);
+	}
+
+	async empty(request: Request, types:string[]) {
+		const keys = types.map(type => this.keylist(type));
+		await request.clearData(keys);
 	}
 }
 
