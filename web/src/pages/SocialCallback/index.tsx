@@ -3,7 +3,7 @@ import { useHistory, useParams } from 'react-router-dom';
 import MainView from '../../components/MainView';
 
 import api from '../../services/api';
-import Swal from 'sweetalert2'; 
+import Swal from 'sweetalert2';
 
 interface Authcode {
 	status: boolean,

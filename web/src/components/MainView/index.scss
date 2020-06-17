@@ -1,0 +1,104 @@
+@import '../../styles/vars.scss';
+
+.main-view {
+	margin: 20px;
+	height: $mainheight;
+	overflow: hidden;
+	display: grid;
+	border-radius: $borderradius;
+	grid-template-columns: 200px auto;
+
+	.backdrop {
+		display: none;
+		position: fixed;
+		top: 0px;
+		left: 0px;
+		bottom: 0px;
+		right: 0px;
+		z-index: 5;
+		background: transparentize($color: #000000, $amount: 0.5);
+	}
+
+	.sidebar {
+		height: $mainheight;
+		background: #F3F3F3;
+		color: $textcolor;
+		padding: 10px;
+		position: relative;
+		font-weight: bold;
+
+		h1 {
+			color: $textcolor;
+		}
+	}
+
+	> .content {
+		height: $mainheight;
+		background-color: #F8F8F8;
+		display: grid;
+		row-gap: 5px;
+		grid-template-rows: 62px auto;
+		position: relative;
+
+		.top {
+			border-bottom: 2px solid $bordercolor;
+			display: grid;
+			grid-template-columns: 225px auto 145px;
+
+			align-items: center;
+			position: relative;
+
+			.sidebar-handler {
+				display: none;
+				padding-left: 15px;
+				font-weight: bold;
+				font-size: 16px;
+				cursor: pointer;
+			}
+
+			.platforms {
+				height: 25px;
+				padding-left: 20px;
+				// display: none;
+			}
+		}
+
+		.body {
+			padding: 0px 10px 10px 10px;
+			overflow: hidden;
+			position: absolute;
+			top: 70px;
+			left: 0px;
+			right: 0px;
+			bottom: 0px;
+		}
+	}
+
+	.progress-bar {
+		position: absolute;
+		bottom: 0px;
+		left:0px;
+		height: 4px;
+		transition: all 0.2s ease-in-out;
+		background: $textcolor;
+
+		.progress-text {
+			position: absolute;
+			left: 10px;
+			bottom: 8px;
+			width: min-content;
+			overflow: visible;
+			font-size: 12px;
+			color: $secondcolor;
+			white-space: nowrap;
+		}
+	}
+
+	&.menuless {
+		display: block;
+
+		.sidebar {
+			display: none;
+		}
+	}
+}

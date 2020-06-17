@@ -4,7 +4,7 @@ import { useHistory } from 'react-router-dom';
 import MainView from '../../components/MainView';
 import ContentPanel from '../../components/ContentPanel';
 import api from '../../services/api';
-import Swal from 'sweetalert2'; 
+import Swal from 'sweetalert2';
 
 import './index.scss';
 
@@ -12,6 +12,7 @@ import { Profile, PagingStatus, MergedData, ItemData } from '../../types';
 
 interface MergedTableProps {
 	type: string,
+	title: string,
 	icon: string,
 	fields: {
 		[key: string]: string
@@ -37,7 +38,7 @@ const MergedTable = (props: MergedTableProps) => {
 	const [filteredList,setFilteredList] = useState<MergedData[]>([]);
 
 	let timeoutSearch:any = null;
-	
+
 	const [dzStatus,setDzStatus] = useState<PagingStatus>();
 	const [spStatus,setSpStatus] = useState<PagingStatus>();
 
@@ -55,7 +56,7 @@ const MergedTable = (props: MergedTableProps) => {
 		const fullget = '/'+platform+'/'+mergetype+'/'+currentStatus.next+'/'+(currentStatus.lastid || '');
 		console.log(fullget);
 		api.get(fullget).then(feed => {
-			console.log(platform, feed.data);	
+			console.log(platform, feed.data);
 			if (feed.data.status) return setStatus(feed.data);
 			setStatus((st:PagingStatus) => ({...st, done:true}));
 		}).catch(feed => {
@@ -73,8 +74,8 @@ const MergedTable = (props: MergedTableProps) => {
 
 	useEffect(() => {
 		if (!dzStatus?.done) return;
-		if (!spStatus?.done) return;	
-		api.get<ListResponse>('/'+mergetype+'list').then(feed => {			
+		if (!spStatus?.done) return;
+		api.get<ListResponse>('/'+mergetype+'list').then(feed => {
 			console.log(feed);
 			if (feed.data.status) {
 				setFullList(feed.data.list);
@@ -130,7 +131,7 @@ const MergedTable = (props: MergedTableProps) => {
 			return true;
 		}) || [];
 		setFilteredList(filtered);
-		setMissing(newMissing);		
+		setMissing(newMissing);
 	}, [fullList, side, search]);
 
 	function handleChangeItem(merged: MergedData, platform: string, newitem: ItemData) {
@@ -157,7 +158,7 @@ const MergedTable = (props: MergedTableProps) => {
 		const newlist = missing[target];
 		const qty = newlist.length;
 		const extraText = (qty > 50) ? ' This can take a while.' : '';
-		
+
 		Swal.fire({
 			title: sourcex+' to '+targetx,
 			html: 'Are you sure you want to try to move <b>'+qty+'</b> '+mergetype+' to your '+targetx+' account?'+extraText,
@@ -179,7 +180,7 @@ const MergedTable = (props: MergedTableProps) => {
 
 	if (loading) {
 		return (
-			<MainView>
+			<MainView title={props.title}>
 				<ContentPanel icon={props.icon}>
 					<div className="text-main">fetching {mergetype}</div>
 					<div className="text-aux">Deezer: {dzStatus?.loaded || '0'}/{dzStatus?.total || '0'}</div>
@@ -190,42 +191,44 @@ const MergedTable = (props: MergedTableProps) => {
 	}
 
 	return (
-		<MainView>
-			<div className="p-1 mb-2 merged-header">
-				<div className="merged-search">
-					<div className="ui icon input">
-						<i className="search icon"></i>
-						<input type="text" placeholder="Search..." defaultValue={ls_search} onChange={handleSearchChange}/>
+		<MainView title={props.title}>
+			<div className="p-1 mb-2 merged-table">
+				<div className="merged-header">
+					<div className="merged-search">
+						<div className="ui icon input">
+							<i className="search icon"></i>
+							<input type="text" placeholder="Search..." defaultValue={ls_search} onChange={handleSearchChange}/>
+						</div>
+					</div>
+
+					<div className="ui buttons merged-filters">
+						{sideFilters && sideFilters.map(sidef => {
+							return (
+								<button key={sidef.code} className={['ui','button',sidef.code === side ? 'active' : ''].join(' ')} onClick={() => handleSideFilterClick(sidef.code)} >
+									<span className='big-text'>{sidef.label} ({sidef.qty})</span>
+									<span className='small-text'>{sidef.mobile} ({sidef.qty})</span>
+								</button>
+							)
+						})}
+					</div>
+					<div className="merged-actions">
+						<button className="ui right labeled icon teal button btn-sync btn-sp" disabled={missing.spotify.length === 0} onClick={() => handleClickMove('deezer','spotify')} >
+							<i className="upload icon"></i>
+							<div className='big-text'>Deezer to Spotify ({missing.spotify.length})</div>
+							<div className='small-text'>Dz to Sp ({missing.spotify.length})</div>
+						</button>
+						<button className="ui right labeled icon teal button btn-sync btn-dz" disabled={missing.deezer.length === 0} onClick={() => handleClickMove('spotify','deezer')} >
+							<i className="upload icon"></i>
+							<div className='big-text'>Spotify to Deezer ({missing.deezer.length})</div>
+							<div className='small-text'>Sp to Dz ({missing.deezer.length})</div>
+						</button>
 					</div>
 				</div>
 
-				<div className="ui buttons merged-filters">
-					{sideFilters && sideFilters.map(sidef => {
-						return (
-							<button key={sidef.code} className={['ui','button',sidef.code === side ? 'active' : ''].join(' ')} onClick={() => handleSideFilterClick(sidef.code)} >
-								<span className='big-text'>{sidef.label} ({sidef.qty})</span>
-								<span className='small-text'>{sidef.mobile} ({sidef.qty})</span>
-							</button>
-						)
-					})}
+				<div className="merged-content">
+					<MergedHead fields={props.fields} />
+					<MergedBody fields={props.fields} list={filteredList} type={mergetype} profile={profile} onChanged={handleChangeItem} />
 				</div>
-				<div className="merged-actions">
-					<button className="ui right labeled icon teal button btn-sync btn-sp" disabled={missing.spotify.length === 0} onClick={() => handleClickMove('deezer','spotify')} >
-						<i className="upload icon"></i>
-						<div className='big-text'>Deezer to Spotify ({missing.spotify.length})</div>
-						<div className='small-text'>Dz to Sp ({missing.spotify.length})</div>
-					</button>
-					<button className="ui right labeled icon teal button btn-sync btn-dz" disabled={missing.deezer.length === 0} onClick={() => handleClickMove('spotify','deezer')} >
-						<i className="upload icon"></i>
-						<div className='big-text'>Spotify to Deezer ({missing.deezer.length})</div>
-						<div className='small-text'>Sp to Dz ({missing.deezer.length})</div>
-					</button>
-				</div>
-			</div>
-			
-			<div className="merged-table">
-				<MergedHead fields={props.fields} />
-				<MergedBody fields={props.fields} list={filteredList} type={mergetype} profile={profile} onChanged={handleChangeItem} />
 			</div>
 		</MainView>
 	)
@@ -239,7 +242,7 @@ interface MergedBodyProps {
 	onChanged: Function
 }
 
-const MergedBody = (props: MergedBodyProps) => {		
+const MergedBody = (props: MergedBodyProps) => {
 
 	let content = null;
 
@@ -272,7 +275,7 @@ interface MergedHeadProps {
 const MergedHead = (props: MergedHeadProps) => {
 	const keys = Object.keys(props.fields);
 	const classRow = ['merged-row','cols-'+keys.length].join(' ');
-	
+
 	const divs = keys.map(field => {
 		const classDiv = 'cell-'+field;
 		const label = props.fields[field];
@@ -291,9 +294,9 @@ const MergedHead = (props: MergedHeadProps) => {
 				</div>
 				<div className="text-center cell-platform">
 					<span className='big-text'>Spotify</span>
-					<span className='small-text'>Sp</span>					
-				</div> 
-			</div>	
+					<span className='small-text'>Sp</span>
+				</div>
+			</div>
 		</div>
 	)
 }
@@ -309,7 +312,7 @@ interface MergedRowProps {
 const MergedRow = (props: MergedRowProps) => {
 	const merged = props.merged;
 	const [busy,setBusy] = useState<boolean>(false);
-	
+
 	function handleClickRow(platform: string) {
 		setBusy(true);
 		api.post('/'+platform+'/find/'+props.type,merged).then(async feed => {
@@ -318,13 +321,13 @@ const MergedRow = (props: MergedRowProps) => {
 			}
 			setBusy(false);
 		}).catch(feed => {
-			setBusy(false); 
+			setBusy(false);
 		});
 	}
-	
+
 	const keys = Object.keys(props.fields);
 	const classRow = ['merged-row',busy ? 'row-busy' : '','cols-'+keys.length].join(' ');
-	
+
 	const divs = keys.map(field => {
 		const classDiv = 'cell-'+field;
 		const value = props.merged[field];
@@ -341,8 +344,8 @@ const MergedRow = (props: MergedRowProps) => {
 			</div>
 			<div className="cell-platform text-center">
 				<MatchButton merged={props.merged} platform='spotify' profile={props.profile} busy={busy} clickHandler={handleClickRow} />
-			</div> 
-		</div>		
+			</div>
+		</div>
 	)
 }
 

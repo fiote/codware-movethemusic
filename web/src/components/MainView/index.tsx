@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import './styles.scss';
+import { Link } from 'react-router-dom';
+
+import './index.scss';
 
 import api from '../../services/api';
 
-import SocialButton from '../../components/SocialButton';
+import SocialButton from '../SocialButton';
 import SideMenu from '../../components/SideMenu';
-import TopAuthor from '../../components/TopAuthor';
+import TopAuthor from '../TopAuthor';
+import ContentTitle from '../../components/ContentTitle';
 import ContentPanel from '../../components/ContentPanel';
 
 interface Profile {
@@ -19,7 +22,7 @@ interface Profile {
 	}
 }
 
-interface MainViewProps { 
+interface MainViewProps {
 	sidemenu?: boolean,
 	profile?: Profile,
 	title?: React.ReactNode,
@@ -30,8 +33,9 @@ interface MainViewProps {
 	children?: React.ReactNode
 }
 
-const MainView = (props: MainViewProps) => {	
+const MainView = (props: MainViewProps) => {
 	const [profile,setProfile] = useState<Profile>();
+	const [floatingmenu,setFloatingMenu] = useState<boolean>(false);
 
 	function getProfile() {
 		if (props.profile) {
@@ -58,14 +62,14 @@ const MainView = (props: MainViewProps) => {
 		params.loading = 'Loading profile...';
 	}
 
-	sidemenu = (params.sidemenu) ? <SideMenu/> : null;
+	sidemenu = (params.sidemenu) ? <SideMenu onClick={handleCloseMenu} /> : null;
 
-	content_top = (profile) ? (props.title || (		
+	content_top = (profile) ? (
 		<div className="platforms">
 			<SocialButton data={profile?.deezer} platform='Deezer' />
 			<SocialButton data={profile?.spotify} platform='Spotify' />
 		</div>
-	)) : null;
+	) : null;
 
 	if (params.loading) {
 		content_body = <ContentPanel type="timer"><div className="text-main">{params.loading}</div></ContentPanel>;
@@ -77,13 +81,23 @@ const MainView = (props: MainViewProps) => {
 		}
 	}
 
-	const gridclass = ['grid',!sidemenu && 'menuless'].join(' ');
+	function handleToggleMenu() {
+		setFloatingMenu(!floatingmenu);
+	}
+
+	function handleCloseMenu() {
+		setFloatingMenu(false);
+	}
+
+	const gridclass = ['main-view',!sidemenu && 'menuless',floatingmenu && 'floating-menu'].join(' ');
 
 	return (
 		<div className={gridclass}>
 			<div className='sidebar'>
 				<div className='top'>
-					<h1>Move<br/>TheMusic</h1>
+					<Link to="/" className="link" onClick={handleCloseMenu}>
+						<h1>Move<br/>TheMusic</h1>
+					</Link>
 				</div>
 				<div className="body">
 					{sidemenu}
@@ -91,7 +105,15 @@ const MainView = (props: MainViewProps) => {
 			</div>
 			<div className='content'>
 				<div className='top'>
+					<div className="sidebar-handler" onClick={handleToggleMenu}>
+						<i className='bars icon'></i>
+						<span>Menu</span>
+					</div>
+
 					{content_top}
+
+					<ContentTitle>{props.title}</ContentTitle>
+
 					<TopAuthor/>
 				</div>
 				<div className="body">
@@ -99,8 +121,11 @@ const MainView = (props: MainViewProps) => {
 					{props.progressbar ? (<div className="progress-bar" style={{width: props.progressbar+'%'}}><div className='progress-text'>{props.progresstext || null}</div></div>) : null}
 				</div>
 			</div>
+
+			<div className='backdrop' onClick={handleCloseMenu}>
+			</div>
 		</div>
 	)
 }
- 
-export default MainView; 
+
+export default MainView;

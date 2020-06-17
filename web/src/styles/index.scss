@@ -1,0 +1,27 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Varela+Round&display=swap');
+
+@import './vars.scss';
+
+html, body, #root {
+	height: 100%;
+}
+
+body {
+	overflow-y: hidden;
+	font-family: 'Varela Round';
+	background: #E6ECF3;
+}
+
+.text-main {
+	color: $textcolor;
+	font-weight: bold;
+	font-size: 22px;
+	margin-bottom: 10px;
+}
+.text-aux {
+	color: $secondcolor;
+	margin-top: 5px;
+}
+
+*::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.03) !important; border-radius: 5px !important; }

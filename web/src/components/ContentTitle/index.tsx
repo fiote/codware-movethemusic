@@ -1,8 +1,7 @@
 import React from 'react';
-
 import './index.scss';
 
-interface ContentTitleProps { 
+interface ContentTitleProps {
 	children?: React.ReactNode
 }
 
@@ -14,5 +13,5 @@ const ContentTitle = (props: ContentTitleProps) => {
 		</div>
 	)
 }
- 
-export default ContentTitle; 
+
+export default ContentTitle;

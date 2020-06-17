@@ -12,7 +12,7 @@ const Albums = () => {
 	}
 
 	return (
-		<MergedTable type='albums' fields={fields} icon={imgSong} />
+		<MergedTable title='Albums' type='albums' fields={fields} icon={imgSong} />
 	)
 }
 

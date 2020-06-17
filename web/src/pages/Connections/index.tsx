@@ -5,7 +5,7 @@ import ContentTitle from '../../components/ContentTitle';
 import './index.scss';
 
 import api from '../../services/api';
-  
+
 interface Profile {
 	deezer: {
 		logged: boolean,
@@ -23,20 +23,50 @@ interface LoginData {
 }
 
 interface SocialCardProps {
-	name: string, 
+	name: string,
 	perms: string[],
 	clickHandler: Function,
 	login?: LoginData
+}
+
+const Connections = () => {
+
+	const [profile,setProfile] = useState<Profile>();
+
+	function getProfile() {
+		api.get<Profile>('/profile').then(feed => {
+			setProfile(feed.data);
+		});
+	}
+
+	function handleClickDisconnect(platform: string) {
+		api.post('/'+platform+'/logout').then(feed => {
+			getProfile();
+		});
+	}
+
+	useEffect(getProfile,[]);
+
+	return (
+		<MainView guest={true} title='Connections' profile={profile}>
+			<div className='connections'>
+				<div className='ui cards'>
+					<SocialCard name='Deezer' login={profile?.deezer} clickHandler={handleClickDisconnect} perms={['Basic-Access','Manage-Library']} />
+					<SocialCard name='Spotify' login={profile?.spotify} clickHandler={handleClickDisconnect} perms={['User-Library-Read','User-Library-Manage','User-Follow-Read','User-Follow-Modify']} />
+				</div>
+			</div>
+		</MainView>
+	)
 }
 
 
 const SocialCard = (props: SocialCardProps) => {
 	const platform = props.name.toLowerCase();
 	const image = require('../../images/'+platform.toLowerCase()+'.png');
-	
+
 	const [busy,setBusy] = useState<boolean>(false);
-	
-	function handleClickConnect() {		
+
+	function handleClickConnect() {
 		if (!props?.login?.authUrl) return;
 		setBusy(true);
 		localStorage.setItem('redirect-after-login',window.location.pathname);
@@ -64,7 +94,7 @@ const SocialCard = (props: SocialCardProps) => {
 					{props.perms.map(text => <div key={text}>{text}</div>)}
 				</div>
 			</div>
-			<div className='extra content right aligned'>				
+			<div className='extra content right aligned'>
 				{props?.login?.logged ? (
 					<button className='ui inverted red button' disabled={busy} onClick={handleClickDisconnect} >Disconnect</button>
 				) : (
@@ -72,38 +102,6 @@ const SocialCard = (props: SocialCardProps) => {
 				)}
 			</div>
 		</div>
-	)
-}
-
-const Connections = () => {
-	
-	const [profile,setProfile] = useState<Profile>();
-
-	function getProfile() {
-		api.get<Profile>('/profile').then(feed => {
-			setProfile(feed.data);
-		});
-	}
-	
-	function handleClickDisconnect(platform: string) {
-		api.post('/'+platform+'/logout').then(feed => {
-			getProfile();
-		});
-	}
-	
-	useEffect(getProfile,[]);
-
-	const title = (
-		<ContentTitle>Connections</ContentTitle>
-	)
-
-	return (
-		<MainView guest={true} title={title} profile={profile}>
-			<div className='ui cards'>
-				<SocialCard name='Deezer' login={profile?.deezer} clickHandler={handleClickDisconnect} perms={['Basic-Access','Manage-Library']} />
-				<SocialCard name='Spotify' login={profile?.spotify} clickHandler={handleClickDisconnect} perms={['User-Library-Read','User-Library-Manage','User-Follow-Read','User-Follow-Modify']} />
-			</div>
-		</MainView>
 	)
 }
 

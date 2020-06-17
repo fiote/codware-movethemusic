@@ -6,7 +6,7 @@ import './styles.scss';
 
 const Home = () => {
 	return (
-		<MainView>
+		<MainView title='Home'>
 			<ContentPanel>Welcome!</ContentPanel>
 		</MainView>
 	)

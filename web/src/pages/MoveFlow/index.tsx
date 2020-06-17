@@ -7,9 +7,9 @@ import ContentTitle from '../../components/ContentTitle';
 import './index.scss';
 
 import api from '../../services/api';
-import Swal from 'sweetalert2'; 
+import Swal from 'sweetalert2';
 
-interface CopyFlowProps {
+interface MoveFlowProps {
 	location: {
 		state: {
 			source: string,
@@ -19,24 +19,24 @@ interface CopyFlowProps {
 	}
 }
 
-const CopyFlow = (props: CopyFlowProps) => {
-  	let { mergetype } = useParams();	  
+const MoveFlow = (props: MoveFlowProps) => {
+  	let { mergetype } = useParams();
 	const history = useHistory();
-	
+
 	const [copylist,setCopylist] = useState<any[]>();
 	const [qtDone,setQtDone] = useState<number>(0);
 	const [qtSuccess,setQtSuccess] = useState<number>(0);
 	const [qtFailed,setQtFailed] = useState<number>(0);
 	const [qtTotal,setQtTotal] = useState<number>(0);
 	const [currentItem,setCurrentItem] = useState<any>();
-	
+
 	const { source, target, items } = props.location.state;
 
 	useEffect(() => {
 		if (!currentItem) return;
 		function goNext() {
 			setQtDone(q => q+1);
-			
+
 			setCopylist(t => {
 				var newlist = Array.from(t || []);
 				newlist.shift();
@@ -61,7 +61,7 @@ const CopyFlow = (props: CopyFlowProps) => {
 		});
 	},[currentItem,target,history]);
 
-	useEffect(() => {	
+	useEffect(() => {
 		if (!copylist) return;
 		let track = copylist[0];
 		if (track) {
@@ -79,9 +79,7 @@ const CopyFlow = (props: CopyFlowProps) => {
 		setCopylist(items);
 	},[]);
 
-	const title = (
-		<ContentTitle>Moving {mergetype} from {source.toUpperCase()} to {target.toUpperCase()}, please standby...</ContentTitle>
-	)
+	const title = 'Moving '+mergetype+'...';
 
 	if (!currentItem) return <MainView title={title} loading='preparing list'/>;
 
@@ -131,4 +129,4 @@ const CopyFlow = (props: CopyFlowProps) => {
 	)
 }
 
-export default CopyFlow;  
+export default MoveFlow;

@@ -22,70 +22,65 @@ const Credits = () => {
 
 	const listing = [
 		{
-			img: imgDeezer, 
-			name: 'Deezer', 
-			link: 'https://iconscout.com/icons/deezer', 
+			img: imgDeezer,
+			name: 'Deezer',
+			link: 'https://iconscout.com/icons/deezer',
 			made: {name:'Luc Chaffard', link:'https://iconscout.com/contributors/luc-chaffard'},
 			from: iconScout
 		},
 		{
-			img: imgSpotify, 
-			name: 'Spotify', 
-			link: 'https://iconscout.com/icons/spotify', 
+			img: imgSpotify,
+			name: 'Spotify',
+			link: 'https://iconscout.com/icons/spotify',
 			made: {name:'Bakul Studio', link:'https://iconscout.com/contributors/naufal-thufail'},
 			from: iconScout
 		},
 		{
-			img: imgCrane, 
-			name: 'Crane', 
-			link: 'https://www.flaticon.com/free-icon/crane_619028', 
+			img: imgCrane,
+			name: 'Crane',
+			link: 'https://www.flaticon.com/free-icon/crane_619028',
 			made: freepik,
 			from: flaticon
 		},
 		{
-			img: imgMic, 
-			name: 'Microphone', 
-			link: 'https://www.flaticon.com/free-icon/microphone_2983859', 
+			img: imgMic,
+			name: 'Microphone',
+			link: 'https://www.flaticon.com/free-icon/microphone_2983859',
 			made: freepik,
 			from: flaticon
 		},
 		{
-			img: imgMusic, 
-			name: 'Music', 
-			link: 'https://www.flaticon.com/free-icon/music_2912120', 
+			img: imgMusic,
+			name: 'Music',
+			link: 'https://www.flaticon.com/free-icon/music_2912120',
 			made: freepik,
 			from: flaticon
 		},
 		{
-			img: imgSong, 
-			name: 'Song', 
-			link: 'https://www.flaticon.com/free-icon/vinyl_2950754', 
+			img: imgSong,
+			name: 'Song',
+			link: 'https://www.flaticon.com/free-icon/vinyl_2950754',
 			made: freepik,
 			from: flaticon
 		},
 		{
-			img: imgTimer, 
-			name: 'Sand Clock', 
-			link: 'https://www.flaticon.com/free-icon/sand-clock_535177', 
+			img: imgTimer,
+			name: 'Sand Clock',
+			link: 'https://www.flaticon.com/free-icon/sand-clock_535177',
 			made: freepik,
 			from: flaticon
 		},
 		{
-			img: imgWarning, 
-			name: 'Warning', 
-			link: 'https://www.flaticon.com/free-icon/warning_595067', 
+			img: imgWarning,
+			name: 'Warning',
+			link: 'https://www.flaticon.com/free-icon/warning_595067',
 			made: freepik,
 			from: flaticon
 		}
 	];
 
-
-	const title = (
-		<ContentTitle>Credits</ContentTitle>
-	)
-
 	return (
-		<MainView title={title}>
+		<MainView title='Credits'>
 			<div style={{padding: 10}}>
 				<div className='ui list'>
 					{listing.map(data => {

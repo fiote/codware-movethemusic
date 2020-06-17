@@ -1,8 +1,8 @@
-@import '../../config/vars.scss';
+@import '../../styles/vars.scss';
 
 .content-title {
 	font-weight: bold;
 	color: $textcolor;
 	font-size: 18px;
-	padding: 20px;
+	text-align: center;
 }

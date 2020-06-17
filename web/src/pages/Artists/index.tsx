@@ -11,7 +11,7 @@ const Artists = () => {
 	}
 
 	return (
-		<MergedTable type='artists' fields={fields} icon={imgMic} />
+		<MergedTable title='Artists' type='artists' fields={fields} icon={imgMic} />
 	)
 }
 

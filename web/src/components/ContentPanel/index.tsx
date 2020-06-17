@@ -1,11 +1,11 @@
 import React from 'react';
-import './styles.scss';
+import './index.scss';
 
 import imgWarning from '../../images/warning.png';
 import imgTimer from '../../images/timer.png';
 import imgCrane from '../../images/crane.png';
 
-interface ContentPanelProps { 
+interface ContentPanelProps {
 	type?: string,
 	icon?: string,
 	children?: React.ReactNode
@@ -35,20 +35,20 @@ const ContentPanel = (props: ContentPanelProps) => {
 		} as {
 			[key: string]: string
 		};
-		
+
 		if (iconType) iconSrc = typeIcons[iconType];
 	}
 
 	let icon = (iconSrc) ? <img className='panel-icon' alt={props.type?.toUpperCase()} src={iconSrc} /> : null;
 
 	return (
-		<div className='panel-container'>
+		<div className='content-panel'>
 			<div className='panel-box'>
 				{icon}
-				<div className="panel-body">{props.children}</div>				
+				<div className="panel-body">{props.children}</div>
 			</div>
 		</div>
 	)
 }
- 
-export default ContentPanel; 
+
+export default ContentPanel;
