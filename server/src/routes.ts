@@ -11,10 +11,8 @@ const spotifyController = new SpotifyController();
 const profileController = new ProfileController();
 
 routes.use((request:Request, response:Response, next:NextFunction) => {
-	console.log('['+request.method+']',request.url);
 
 	request.getData = function(key:string, defvalue:any | undefined) {
-		console.log('session.getData',key);
 		return request.session[key] || defvalue;
 	}
 
@@ -29,7 +27,6 @@ routes.use((request:Request, response:Response, next:NextFunction) => {
 
 	request.setData = function(key:string, newvalue:any) {
 		return new Promise(resolve => {
-			console.log('session.setData',key);
 			request.session[key] = newvalue;
 			request.session.save(resolve);
 		});
