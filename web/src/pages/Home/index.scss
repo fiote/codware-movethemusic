@@ -1,0 +1,23 @@
+.home {
+	width: 520px;
+	max-width: 90%;
+	margin: 0px auto;
+
+	.text-main {
+		font-weight: normal;
+		margin-bottom: 20px;
+	}
+
+	.text-normal {
+		padding: 10px;
+	}
+
+	.text-below {
+		display: none;
+	}
+
+	.platforms {
+		display: none;
+		margin: 20px 0px;
+	}
+}
