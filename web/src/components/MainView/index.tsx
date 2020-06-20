@@ -35,6 +35,7 @@ interface MainViewProps {
 
 const MainView = (props: MainViewProps) => {
 	const [profile,setProfile] = useState<Profile>();
+	const [error,setError] = useState<string>();
 	const [floatingmenu,setFloatingMenu] = useState<boolean>(false);
 
 	function getProfile() {
@@ -44,6 +45,8 @@ const MainView = (props: MainViewProps) => {
 		}
 		api.get<Profile>('/profile').then(feed => {
 			setProfile(feed.data);
+		}).catch(feed => {
+			setError(feed.toJSON().message);
 		});
 	}
 
@@ -79,6 +82,15 @@ const MainView = (props: MainViewProps) => {
 		if (!profile?.deezer.logged && !profile?.spotify.logged && !props.guest) {
 			content_body = <ContentPanel>You need to connect to a platform first.</ContentPanel>;
 		}
+	}
+
+	if (error) {
+		content_body = (
+			<ContentPanel type='warning'>
+				<div className="text-main">Ops!</div>
+				<div className="text-aux">{error}</div>
+			</ContentPanel>
+		)
 	}
 
 	function handleToggleMenu() {
