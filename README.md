@@ -1,6 +1,6 @@
 # MoveTheMusic
 
-NodeJS/ReactJS page that let you 'copy' your favorite tracks between Deezer and Spotify.
+NodeJS/ReactJS page that let you 'move' your favorite tracks, albums and artists between Deezer and Spotify.
 
 # Avaliable at
 
