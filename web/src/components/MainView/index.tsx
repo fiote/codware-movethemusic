@@ -11,6 +11,8 @@ import TopAuthor from '../TopAuthor';
 import ContentTitle from '../../components/ContentTitle';
 import ContentPanel from '../../components/ContentPanel';
 
+import Platforms from '../../components/Platforms';
+
 interface Profile {
 	deezer: {
 		logged: boolean,
@@ -80,7 +82,12 @@ const MainView = (props: MainViewProps) => {
 
 	if (profile) {
 		if (!profile?.deezer.logged && !profile?.spotify.logged && !props.guest) {
-			content_body = <ContentPanel>You need to connect to a platform first.</ContentPanel>;
+			content_body = (
+				<ContentPanel>
+					You need to connect to a platform first.
+					<Platforms />
+				</ContentPanel>
+			)
 		}
 	}
 

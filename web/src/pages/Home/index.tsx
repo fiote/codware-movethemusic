@@ -1,29 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import ContentPanel from '../../components/ContentPanel';
-import SocialButton from '../../components/SocialButton';
 import MainView from '../../components/MainView';
-import api from '../../services/api';
-
-import { Profile } from '../../types';
-
+import Platforms from '../../components/Platforms';
 import './index.scss';
 
 const Home = () => {
-	const [profile, setProfile] = useState<Profile>();
-	useEffect(() => {
-		api.get<Profile>('/profile').then(feed => {
-			setProfile(feed.data);
-		})
-	}, []);
-
-
-	const platforms = profile ? (
-		<div className="platforms">
-			<SocialButton data={profile?.deezer} platform='Deezer' />
-			<SocialButton data={profile?.spotify} platform='Spotify' />
-		</div>
-	) : null;
-
 	return (
 		<MainView guest={true} >
 			<ContentPanel>
@@ -37,9 +18,9 @@ const Home = () => {
 					<div className="text-normal">
 						Use the icons <b><span className="text-above">above</span><span className="text-below">below</span></b> to connect to the services, and then the side menu to access their content.
 					</div>
-					<div className="platforms">
-						{platforms}
-					</div>
+
+					<Platforms />
+
 					<div className="text-normal">
 						The merging and matching is based on the entries' titles and although we're constantly improving this proccess, some false positives may occur. We apologize for that.
 					</div>
