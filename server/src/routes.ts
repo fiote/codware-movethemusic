@@ -3,6 +3,8 @@ import DeezerController from './controllers/DeezerController';
 import SpotifyController from './controllers/SpotifyController';
 import ProfileController from './controllers/ProfileController';
 
+import Session from './classes/Session';
+
 
 const routes = express.Router();
 
@@ -11,28 +13,32 @@ const spotifyController = new SpotifyController();
 const profileController = new ProfileController();
 
 routes.use((request:Request, response:Response, next:NextFunction) => {
+	const title = '['+request.method+'] '+request.url;
+	const count = 100 - title.length;
+	// console.log('=====',title,count > 0 ? '='.repeat(100 - title.length) : '');
 
 	request.getData = function(key:string, defvalue:any | undefined) {
-		return request.session[key] || defvalue;
+		return Session.get(request, key, defvalue);
 	}
 
 	request.clearData = function(keys:string[]) {
 		return new Promise(resolve => {
 			for (var key of keys) {
-				request.session[key] = null;
+				Session.set(request, key, null);
 			}
-			request.session.save(resolve);
+			resolve();
 		});
 	}
 
 	request.setData = function(key:string, newvalue:any) {
 		return new Promise(resolve => {
-			request.session[key] = newvalue;
-			request.session.save(resolve);
+			Session.set(request, key, newvalue);
+			resolve();
 		});
 	}
 
 	next();
+
 });
 
 routes.get('/profile',profileController.get);

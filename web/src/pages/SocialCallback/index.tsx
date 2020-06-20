@@ -29,7 +29,8 @@ const SocialCallback = () => {
 	const value = String(params.get(field));
 
 	useEffect(() => {
-		const redirect = localStorage.getItem('redirect-after-login') || '/tracks';
+		let redirect:string = localStorage.getItem('redirect-after-login') || '/tracks';
+		if (redirect.includes('callback')) redirect = '/';
 		api.get<Authcode>('/'+plaform+'/authcode?'+field+'='+value).then(async feed => {
 			if (feed.data.status) {
 				// await Swal.fire({title:'Nice!', html:'We\'re now connected to your '+plaform.toUpperCase()+' account.' ,icon:'success'});

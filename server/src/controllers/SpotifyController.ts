@@ -153,7 +153,7 @@ class SpotifyController {
 
 	async checkCode(request: Request, response: Response) {
 		const accessToken = request.query.access_token;
-		if (!accessToken) return response.json({status:false, error:'no_acess_token'});
+		if (!accessToken || accessToken == 'null') return response.json({status:false, error:'no_acess_token'});
 
 		await SP.logout(request);
 

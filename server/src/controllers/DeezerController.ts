@@ -226,7 +226,7 @@ class DeezerController {
 		pager.loadEntities(request, response, 'tracks');
 	}
 
-	async static getTracks(request: Request) {
+	static getTracks(request: Request) {
 		return pager.get(request, 'tracks');
 	}
 

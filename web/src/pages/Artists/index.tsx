@@ -1,6 +1,5 @@
 import React from 'react';
 import MergedTable from '../../components/MergedTable';
-import { MergedData } from '../../types';
 
 import imgMic from '../../images/microphone.png';
 

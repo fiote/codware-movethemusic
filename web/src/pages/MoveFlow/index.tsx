@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { useHistory, useParams } from 'react-router-dom';
 import MainView from '../../components/MainView';
 import ContentPanel from '../../components/ContentPanel';
-import ContentTitle from '../../components/ContentTitle';
 
 import './index.scss';
 
@@ -52,14 +51,13 @@ const MoveFlow = (props: MoveFlowProps) => {
 
 		api.post('/'+target+'/find/'+mergetype,currentItem).then(response => {
 			const feed = response.data;
-			console.log(feed);
 			feed.status ? setQtSuccess(q => q+1) : setQtFailed(q => q+1);
 			feed.logout ? execLogout() : goNext();
 		}).catch(feed => {
 			setQtFailed(q => q+1);
 			console.error(feed);
 		});
-	},[currentItem,target,history]);
+	},[currentItem,target,history,mergetype]);
 
 	useEffect(() => {
 		if (!copylist) return;
@@ -90,30 +88,35 @@ const MoveFlow = (props: MoveFlowProps) => {
 		</div>
 	)
 
-	let content = null;
 
-	if (mergetype == 'tracks') {
+	let content = null;
+	let imgAlt = null;
+
+	if (mergetype === 'tracks') {
 		content = (
 			<>
 				<div className="copy-title">{currentItem.title}</div>
 				<div className="copy-details">{currentItem.artist}</div>
 			</>
 		)
+		imgAlt = currentItem.title;
 	}
 
-	if (mergetype == 'albums') {
+	if (mergetype === 'albums') {
 		content = (
 			<>
 				<div className="copy-title">{currentItem.album}</div>
 				<div className="copy-details">{currentItem.artist}</div>
 			</>
 		)
+		imgAlt = currentItem.album;
 	}
 
-	if (mergetype == 'artists') {
+	if (mergetype === 'artists') {
 		content = (
 			<div className="copy-title">{currentItem.artist}</div>
 		)
+		imgAlt = currentItem.artist;
 	}
 
 	return (
@@ -121,7 +124,7 @@ const MoveFlow = (props: MoveFlowProps) => {
 			<ContentPanel>
 				<div className="copy-box">
 					<div className="copy-number">{qtDone+1}/{qtTotal}</div>
-					<img className="copy-cover" src={currentItem.image_url} />
+					<img className="copy-cover" src={currentItem.image_url}  alt={imgAlt} />
 					{content}
 				</div>
 			</ContentPanel>

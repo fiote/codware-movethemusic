@@ -33,6 +33,7 @@ const MergedTable = (props: MergedTableProps) => {
 	const [missing,setMissing] = useState<MissingData>({deezer:[], spotify:[]});
 
 	const [loading,setLoading] = useState<boolean>(true);
+	const [merging,setMerging] = useState<boolean>(false);
 	const [sideFilters,setSideFilters] = useState<any[]>([]);
 	const [fullList,setFullList] = useState<MergedData[]>();
 	const [filteredList,setFilteredList] = useState<MergedData[]>([]);
@@ -54,9 +55,7 @@ const MergedTable = (props: MergedTableProps) => {
 	function loadItems(platform: string, currentStatus: PagingStatus, setStatus: Function) {
 		if (!currentStatus?.next || currentStatus?.done) return;
 		const fullget = '/'+platform+'/'+mergetype+'/'+currentStatus.next+'/'+(currentStatus.lastid || '');
-		console.log(fullget);
 		api.get(fullget).then(feed => {
-			console.log(platform, feed.data);
 			if (feed.data.status) return setStatus(feed.data);
 			setStatus((st:PagingStatus) => ({...st, done:true}));
 		}).catch(feed => {
@@ -75,14 +74,17 @@ const MergedTable = (props: MergedTableProps) => {
 	useEffect(() => {
 		if (!dzStatus?.done) return;
 		if (!spStatus?.done) return;
+		setMerging(true);
+		setLoading(false);
 		api.get<ListResponse>('/'+mergetype+'list').then(feed => {
-			console.log(feed);
 			if (feed.data.status) {
 				setFullList(feed.data.list);
-				setLoading(false);
+				setMerging(false);
 			} else {
 				console.error(feed);
 			}
+		}).catch(feed => {
+			console.error(feed);
 		});
 	},[dzStatus,spStatus]);
 
@@ -176,6 +178,17 @@ const MergedTable = (props: MergedTableProps) => {
 	function handleSideFilterClick(newSide: string) {
 		setSide(newSide);
 		localStorage.setItem(mergetype+'-filter-side',newSide);
+	}
+
+	if (merging) {
+		return (
+			<MainView title={props.title}>
+				<ContentPanel icon={props.icon}>
+					<div className="text-main">merging {mergetype}</div>
+					<div className="text-aux">(this can take a while)</div>
+				</ContentPanel>
+			</MainView>
+		)
 	}
 
 	if (loading) {

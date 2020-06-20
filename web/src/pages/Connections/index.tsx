@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import MainView from '../../components/MainView';
-import ContentTitle from '../../components/ContentTitle';
 
 import './index.scss';
 

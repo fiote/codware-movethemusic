@@ -1,7 +1,5 @@
 import React from 'react';
 import MainView from '../../components/MainView';
-import ContentPanel from '../../components/ContentPanel';
-import ContentTitle from '../../components/ContentTitle';
 
 import './index.scss';
 
@@ -88,11 +86,11 @@ const Credits = () => {
 						const fromlink = 'https://'+data.from.link;
 						return (
 							<div key={data.link} className='item'>
-								<img className='ui square image' src={data.img} />
+								<img className='ui square image' src={data.img} alt='' />
 								<div className='content'>
-									<a className='header' href={data.link} target='_blank'>{data.name}</a>
+									<a className='header' href={data.link} target='_blank' rel='noopener noreferrer'>{data.name}</a>
 									<div className='description'>
-										made by <a href={madelink} target="_blank">{data.made.name}</a> from <a href={fromlink} title={data.from.name}> {data.from.link}</a>
+										made by <a href={madelink} target="_blank" rel='noopener noreferrer'>{data.made.name}</a> from <a href={fromlink} target='_blank' rel='noopener noreferrer' title={data.from.name}> {data.from.link}</a>
 									</div>
 								</div>
 							</div>

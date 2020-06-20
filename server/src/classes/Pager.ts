@@ -33,7 +33,7 @@ class Pager {
 		const loaded = list.length;
 		const total = pagedata.total;
 		const next = (loaded < total && pagedata.next) ? ipage+1 : null;
-		response.json({status:true, next, loaded, total, lastid, done:loaded >= total});
+		response.json({status:true, next, loaded, total, lastid, done:loaded >= total, pagedata});
 	}
 
 	async getEntityPage(request: Request, type: string, ipage: number, lastid: string) {
