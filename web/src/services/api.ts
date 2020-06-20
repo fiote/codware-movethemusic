@@ -1,10 +1,9 @@
 import axios from 'axios';
 
-let baseURL = 'http://movethemusic-api.codware.com';
-// baseURL = 'http://localhost:3333';
+console.log('process.env.REACT_APP_APIURL',process.env.REACT_APP_APIURL);
 
 const api = axios.create({
-	baseURL,
+	baseURL: process.env.REACT_APP_APIURL,
 	withCredentials: true
 });
 
