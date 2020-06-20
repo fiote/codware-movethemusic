@@ -235,7 +235,7 @@ class DeezerController {
 	}
 
 	async static pushTrack(request: Request, newentry: any) {
-		await pager.set(request, 'tracks', newentry);
+		await pager.push(request, 'tracks', newentry);
 	}
 
 	async findTrack(request: Request, response: Response) {
@@ -339,7 +339,7 @@ class DeezerController {
 	}
 
 	async static pushArtist(request: Request, newentry: any) {
-		await pager.set(request, 'artists', newentry);
+		await pager.push(request, 'artists', newentry);
 	}
 
 	async findArtist(request: Request, response: Response) {
