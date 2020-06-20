@@ -65,8 +65,8 @@ const MoveFlow = (props: MoveFlowProps) => {
 		if (track) {
 			setCurrentItem(track);
 		} else {
-			const extra = qtFailed ? '<br/>(but we couldn\'t find a suitable match for <b>'+qtFailed+'</b> of them)' : '';
-			Swal.fire({title:'Done!', html:'We finished moving your '+source.toUpperCase()+' '+mergetype+' to '+target.toUpperCase()+'.'+extra,icon:'success'}).then(ev => {
+			const extra = qtFailed ? ' (but we couldn\'t find a suitable match for <b>'+qtFailed+'</b> of them)' : '';
+			Swal.fire({title:'Done!', html:'We finished moving your '+source.toUpperCase()+' '+mergetype+' to '+target.toUpperCase()+extra+'.',icon:'success'}).then(ev => {
 				history.push('/'+mergetype);
 			});
 		}
