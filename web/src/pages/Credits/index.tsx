@@ -74,8 +74,18 @@ const Credits = () => {
 			link: 'https://www.flaticon.com/free-icon/warning_595067',
 			made: freepik,
 			from: flaticon
+		},
+		{
+			img: null,
+			name: 'Spotify Splash',
+			link: 'https://unsplash.com/photos/6k4HkET8dPM',
+			made: {name: 'Charles Deluvio', link: 'unsplash.com/@charlesdeluvio'},
+			from: {name: 'Unsplash', link:'unsplash.com'}
 		}
+
 	];
+
+	// <span>Photo by <a href="https://unsplash.com/s/photos/spotify/@charlesdeluvio?utm_source=unsplash&amp;utm_medium=referral&amp;utm_content=creditCopyText">Charles Deluvio</a> on <a href="/s/photos/spotify?utm_source=unsplash&amp;utm_medium=referral&amp;utm_content=creditCopyText">Unsplash</a></span>
 
 	return (
 		<MainView title='Credits' guest={true}>
@@ -86,7 +96,7 @@ const Credits = () => {
 						const fromlink = 'https://'+data.from.link;
 						return (
 							<div key={data.link} className='item'>
-								<img className='ui square image' src={data.img} alt='' />
+								{data.img && <img className='ui square image' src={data.img} alt='' />}
 								<div className='content'>
 									<a className='header' href={data.link} target='_blank' rel='noopener noreferrer'>{data.name}</a>
 									<div className='description'>
